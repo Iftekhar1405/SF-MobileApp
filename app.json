@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Salim Footwear",
-    "slug": "salim-footwear",
+    "name": "Ajanta Shoes",
+    "slug": "ajanta-shoes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "salimfootwear",
+    "scheme": "salimmobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,15 +15,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.salimfootwear.app"
+      "bundleIdentifier": "com.ajantashoes.app"
     },
     "android": {
+      "package": "com.ajantashoes.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#E8193C"
       },
-      "package": "com.salimfootwear.app",
       "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -34,8 +35,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-barcode-scanner",
-      "expo-camera"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera to scan product barcodes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

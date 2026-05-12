@@ -1,28 +1,22 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import {
+  ErrorBoundary,
+  Stack,
+  SplashScreen,
+  useRouter,
+  useSegments,
+} from 'expo-router';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import '../global.css';
-import { QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
-import { queryClient } from '../services/queryClient';
-import { useColorScheme } from '@/components/useColorScheme';
+import { AppProviders } from '@/providers/AppProviders';
+import { useAuthStore } from '@/store/authStore';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+export { ErrorBoundary } from 'expo-router';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -30,37 +24,39 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const loadFromStorage = useAuthStore((s) => s.loadFromStorage);
+  const router = useRouter();
+  const segments = useSegments();
+  const token = useAuthStore((s) => s.token);
+
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    loadFromStorage();
+  }, [loadFromStorage]);
 
-  if (!loaded) {
-    return null;
-  }
+  useEffect(() => {
+    if (loaded && hydrated) SplashScreen.hideAsync();
+  }, [loaded, hydrated]);
 
-  return <RootLayoutNav />;
-}
+  useEffect(() => {
+    if (!hydrated || !loaded) return;
+    const inAuth = segments[0] === '(auth)';
+    if (!token && !inAuth) router.replace('/(auth)/login');
+    if (token && inAuth) router.replace('/(tabs)');
+  }, [hydrated, loaded, token, segments, router]);
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  if (!loaded || !hydrated) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <QueryClientProvider client={queryClient}>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
+    <AppProviders>
+      <ThemeProvider value={DefaultTheme}>
+        <Stack screenOptions={{ headerShown: false }} />
         <Toast />
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AppProviders>
   );
 }

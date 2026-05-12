@@ -1,41 +1,68 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors } from '@/constants/Colors';
+import { RADIUS, SPACING } from '@/constants/theme';
 
-interface QtyStepperProps {
+type Props = {
   value: number;
   onIncrement: () => void;
   onDecrement: () => void;
   optionLabel?: string;
-}
+  disabled?: boolean;
+};
 
-export function QuantityStepper({ value, onIncrement, onDecrement, optionLabel }: QtyStepperProps) {
+export function QuantityStepper({
+  value,
+  onIncrement,
+  onDecrement,
+  optionLabel,
+  disabled,
+}: Props) {
   return (
-    <View className="items-center">
-      <View className="flex-row items-center border border-success rounded-md overflow-hidden">
-        <TouchableOpacity 
+    <View style={styles.col}>
+      <View style={styles.row}>
+        <Pressable
           onPress={onDecrement}
-          className="px-3 py-2 bg-transparent items-center justify-center"
-        >
-          <Ionicons name="remove" size={16} color={Colors.success} />
-        </TouchableOpacity>
-        
-        <View className="px-4 py-2 items-center justify-center">
-          <Text className="font-bold text-success">{value}</Text>
-        </View>
-
-        <TouchableOpacity 
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.btn,
+            pressed && { opacity: 0.7 },
+            disabled && { opacity: 0.4 },
+          ]}>
+          <Text style={styles.btnText}>−</Text>
+        </Pressable>
+        <Text style={styles.value}>{value}</Text>
+        <Pressable
           onPress={onIncrement}
-          className="px-3 py-2 bg-transparent items-center justify-center"
-        >
-          <Ionicons name="add" size={16} color={Colors.success} />
-        </TouchableOpacity>
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.btn,
+            pressed && { opacity: 0.7 },
+            disabled && { opacity: 0.4 },
+          ]}>
+          <Text style={styles.btnText}>+</Text>
+        </Pressable>
       </View>
-      
-      {optionLabel && (
-        <Text className="text-xs text-medium-gray mt-1">{optionLabel}</Text>
-      )}
+      {optionLabel ? (
+        <Text style={styles.opt}>{optionLabel}</Text>
+      ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  col: { alignItems: 'center', gap: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  btn: {
+    borderWidth: 1,
+    borderColor: colors.success,
+    borderRadius: RADIUS.sm,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+  },
+  btnText: { color: colors.success, fontSize: 20, fontWeight: '700' },
+  value: { minWidth: 28, textAlign: 'center', fontWeight: '700' },
+  opt: { color: colors.mediumGray, fontSize: 12 },
+});

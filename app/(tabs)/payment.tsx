@@ -1,93 +1,126 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/colors';
-import { Ionicons } from '@expo/vector-icons';
-import { Badge } from '../../components/ui/Badge';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { colors } from '@/constants/Colors';
+import { SPACING } from '@/constants/theme';
+import { useCartQuery } from '@/hooks/useCart';
+import { useOrderHistory } from '@/hooks/useOrders';
+import { formatCurrencyINR } from '@/utils/formatCurrency';
+import { formatDateShort } from '@/utils/formatDate';
+import type { Order } from '@/types/models';
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('Active Orders');
-  
-  const tabs = ['Active Orders', 'Order History'];
-  
-  // Mock Orders
-  const orders = [
-    { id: 'ORD-58392', date: 'Oct 24, 2026', items: 12, value: 34500, status: 'Pending' },
-    { id: 'ORD-58390', date: 'Oct 21, 2026', items: 48, value: 128900, status: 'Confirmed' },
-    { id: 'ORD-58201', date: 'Oct 15, 2026', items: 24, value: 56000, status: 'Dispatched' },
-    { id: 'ORD-58110', date: 'Oct 05, 2026', items: 8, value: 15400, status: 'Delivered' },
-  ];
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<'active' | 'history'>('active');
+  const { data: cart, refetch: refetchCart } = useCartQuery();
+  const { data, isRefetching, refetch } = useOrderHistory();
 
-  const filteredOrders = activeTab === 'Active Orders' 
-    ? orders.filter(o => o.status !== 'Delivered')
-    : orders.filter(o => o.status === 'Delivered');
+  const filtered = useMemo(() => {
+    const rows = data ?? [];
+    if (tab === 'active') {
+      return rows.filter((o) =>
+        ['pending', 'processing', 'shipped'].includes(o.status)
+      );
+    }
+    return rows.filter((o) => o.status === 'delivered');
+  }, [data, tab]);
 
   return (
-    <View className="flex-1 bg-off-white">
-      {/* Top Tabs */}
-      <View className="flex-row bg-white border-b border-light-gray">
-        {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            className={`flex-1 items-center py-4 border-b-2 ${activeTab === tab ? 'border-primary' : 'border-transparent'}`}
-          >
-            <Text className={`font-bold ${activeTab === tab ? 'text-primary' : 'text-medium-gray'}`}>
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
+    <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
+      <View style={{ paddingTop: insets.top, paddingHorizontal: SPACING.md }}>
+        <AppHeader cartCount={cart?.totalItems ?? 0} />
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
-        {filteredOrders.map(order => (
-          <TouchableOpacity 
-            key={order.id}
-            onPress={() => router.push(`/orders/${order.id}`)}
-            className="bg-white rounded-xl border border-light-gray p-4 mb-3"
-          >
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="font-bold text-dark-gray">{order.id}</Text>
-              <Badge 
-                label={order.status} 
-                type={
-                  order.status === 'Delivered' ? 'neutral' : 
-                  order.status === 'Dispatched' ? 'info' : 
-                  order.status === 'Confirmed' ? 'success' : 'warning'
-                } 
-              />
-            </View>
-            
-            <View className="flex-row justify-between mb-3">
-              <View>
-                <Text className="text-medium-gray text-xs">Date</Text>
-                <Text className="text-dark-gray font-medium mt-1">{order.date}</Text>
-              </View>
-              <View>
-                <Text className="text-medium-gray text-xs text-center">Items</Text>
-                <Text className="text-dark-gray font-medium mt-1 text-center">{order.items}</Text>
-              </View>
-              <View>
-                <Text className="text-medium-gray text-xs text-right">Value</Text>
-                <Text className="text-success font-bold mt-1 text-right">₹ {order.value.toLocaleString('en-IN')}</Text>
-              </View>
-            </View>
-            
-            <View className="border-t border-light-gray pt-3 mt-1 flex-row items-center justify-between">
-              <Text className="text-medium-gray text-xs">View Details</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.mediumGray} />
-            </View>
-          </TouchableOpacity>
-        ))}
-        
-        {filteredOrders.length === 0 && (
-          <View className="items-center justify-center py-12">
-            <Ionicons name="receipt-outline" size={64} color={Colors.lightGray} />
-            <Text className="text-medium-gray mt-4">No {activeTab.toLowerCase()} found.</Text>
-          </View>
+      <View style={styles.tabs}>
+        <Pressable
+          onPress={() => setTab('active')}
+          style={[styles.tab, tab === 'active' && styles.tabActive]}>
+          <Text style={[styles.tabText, tab === 'active' && styles.tabTextActive]}>
+            Active orders
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setTab('history')}
+          style={[styles.tab, tab === 'history' && styles.tabActive]}>
+          <Text style={[styles.tabText, tab === 'history' && styles.tabTextActive]}>
+            Order history
+          </Text>
+        </Pressable>
+      </View>
+
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item._id}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => {
+              refetch();
+              refetchCart();
+            }}
+          />
+        }
+        contentContainerStyle={{ padding: SPACING.md, gap: SPACING.sm, paddingBottom: 120 }}
+        ListEmptyComponent={
+          <Text style={{ color: colors.mediumGray }}>No orders in this tab.</Text>
+        }
+        renderItem={({ item }) => (
+          <OrderCard item={item} onOpen={() => router.push(`/orders/${item._id}`)} />
         )}
-      </ScrollView>
+      />
     </View>
   );
 }
+
+function OrderCard({ item, onOpen }: { item: Order; onOpen: () => void }) {
+  return (
+    <Pressable onPress={onOpen} style={styles.card}>
+      <Text style={styles.id}>#{item._id.slice(-6).toUpperCase()}</Text>
+      <Text style={styles.meta}>
+        {item.createdAt ? formatDateShort(item.createdAt) : ''}
+      </Text>
+      <Text style={styles.meta}>
+        {item.totalItems} items · {formatCurrencyINR(item.totalPrice)}
+      </Text>
+      <Text style={styles.badge}>{item.status}</Text>
+      <Text style={styles.link}>View details</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  tabs: { flexDirection: 'row', paddingHorizontal: SPACING.md, gap: SPACING.sm },
+  tab: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: 999,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  tabActive: { borderColor: colors.primary, backgroundColor: '#FFF5F7' },
+  tabText: { fontWeight: '700', color: colors.mediumGray },
+  tabTextActive: { color: colors.primary },
+  card: {
+    backgroundColor: colors.white,
+    padding: SPACING.md,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lightGray,
+  },
+  id: { fontWeight: '900', color: colors.darkGray },
+  meta: { marginTop: 4, color: colors.mediumGray },
+  badge: { marginTop: 8, fontWeight: '800', color: colors.primary, textTransform: 'capitalize' },
+  link: { marginTop: SPACING.sm, color: colors.primary, fontWeight: '800' },
+});

@@ -1,57 +1,54 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-import { api } from '../services/api';
+import { loginRequest } from '@/services/auth.service';
+import {
+  deleteAuthToken,
+  getAuthToken,
+  setAuthToken,
+} from '@/utils/tokenStorage';
 
-interface User {
-  _id: string;
-  name: string;
-  email?: string;
-  mobile?: string;
-  role: string;
-}
+const USER_TOKEN_KEY = 'userTokenJson';
 
-interface AuthStore {
-  user: User | null;
+export type UserToken = { name: string; userId: string; role: string };
+
+type AuthState = {
   token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (token: string, user: User) => Promise<void>;
-  logout: () => Promise<void>;
+  userToken: UserToken | null;
+  hydrated: boolean;
   loadFromStorage: () => Promise<void>;
-}
+  login: (identifier: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
+export const useAuthStore = create<AuthState>((set) => ({
   token: null,
-  isAuthenticated: false,
-  isLoading: true,
+  userToken: null,
+  hydrated: false,
 
-  login: async (token, user) => {
-    await SecureStore.setItemAsync('authToken', token);
-    set({ token, user, isAuthenticated: true });
+  loadFromStorage: async () => {
+    const token = await getAuthToken();
+    const raw = await AsyncStorage.getItem(USER_TOKEN_KEY);
+    let userToken: UserToken | null = null;
+    if (raw) {
+      try {
+        userToken = JSON.parse(raw) as UserToken;
+      } catch {
+        userToken = null;
+      }
+    }
+    set({ token, userToken, hydrated: true });
+  },
+
+  login: async (identifier: string, password: string) => {
+    const res = await loginRequest({ identifier, password });
+    await setAuthToken(res.token);
+    await AsyncStorage.setItem(USER_TOKEN_KEY, JSON.stringify(res.userToken));
+    set({ token: res.token, userToken: res.userToken });
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync('authToken');
-    set({ token: null, user: null, isAuthenticated: false });
-  },
-
-  loadFromStorage: async () => {
-    set({ isLoading: true });
-    try {
-      const token = await SecureStore.getItemAsync('authToken');
-      if (token) {
-        // Option 1: Validate token or fetch profile
-        // const { data } = await api.get('/user/profile');
-        // set({ token, user: data.user, isAuthenticated: true });
-        
-        // Option 2: Optimistically set authenticated
-        set({ token, isAuthenticated: true });
-      }
-    } catch (e) {
-      console.error('Failed to load token', e);
-    } finally {
-      set({ isLoading: false });
-    }
+    await deleteAuthToken();
+    await AsyncStorage.removeItem(USER_TOKEN_KEY);
+    set({ token: null, userToken: null });
   },
 }));

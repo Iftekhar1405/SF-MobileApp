@@ -1,4 +1,4 @@
-export const Colors = {
+export const colors = {
   primary: '#E8193C',
   primaryDark: '#C0143A',
   success: '#2E7D32',
@@ -9,24 +9,28 @@ export const Colors = {
   lightGray: '#EEEEEE',
   mediumGray: '#9E9E9E',
   darkGray: '#212121',
-};
+  mensTile: '#00838F',
+  womensTile: '#AD1457',
+  kidsTile: '#2E7D32',
+} as const;
 
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
+const tintColorLight = colors.primary;
+const tintColorDark = '#ffffff';
 
+/** Legacy tab template theme (Themed.tsx / EditScreenInfo) */
 export default {
   light: {
-    text: '#000',
-    background: '#fff',
+    text: colors.darkGray,
+    background: colors.white,
     tint: tintColorLight,
-    tabIconDefault: '#ccc',
+    tabIconDefault: colors.mediumGray,
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#fff',
-    background: '#000',
+    text: colors.white,
+    background: '#000000',
     tint: tintColorDark,
-    tabIconDefault: '#ccc',
+    tabIconDefault: colors.mediumGray,
     tabIconSelected: tintColorDark,
   },
-};
+} as const;

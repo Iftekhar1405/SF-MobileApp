@@ -1,55 +1,73 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/colors';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  ViewStyle,
+} from 'react-native';
+import { colors } from '@/constants/Colors';
+import { RADIUS, SPACING } from '@/constants/theme';
 
-interface ButtonProps {
-  label: string;
-  onPress: () => void;
+type Props = {
+  title: string;
+  onPress?: () => void;
   variant?: 'primary' | 'outline' | 'ghost';
-  isLoading?: boolean;
   disabled?: boolean;
-  className?: string;
-  textClassName?: string;
-}
+  loading?: boolean;
+  style?: ViewStyle;
+};
 
-export function Button({ 
-  label, 
-  onPress, 
-  variant = 'primary', 
-  isLoading, 
-  disabled, 
-  className = '',
-  textClassName = ''
-}: ButtonProps) {
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  disabled,
+  loading,
+  style,
+}: Props) {
   const isPrimary = variant === 'primary';
-  const isOutline = variant === 'outline';
-  
   return (
-    <TouchableOpacity
-      disabled={disabled || isLoading}
+    <Pressable
+      accessibilityRole="button"
       onPress={onPress}
-      className={`
-        flex-row items-center justify-center
-        ${isPrimary ? 'bg-primary rounded-full px-6 py-3' : ''}
-        ${isOutline ? 'border border-success bg-transparent rounded-md px-4 py-2' : ''}
-        ${disabled ? 'opacity-50' : ''}
-        ${className}
-      `}
-    >
-      {isLoading ? (
-        <ActivityIndicator color={isPrimary ? Colors.white : Colors.success} />
+      disabled={disabled || loading}
+      style={({ pressed }) => [
+        styles.base,
+        isPrimary ? styles.primary : styles.outline,
+        pressed && isPrimary && { backgroundColor: colors.primaryDark },
+        (disabled || loading) && { opacity: 0.5 },
+        style,
+      ]}>
+      {loading ? (
+        <ActivityIndicator color={isPrimary ? colors.white : colors.success} />
       ) : (
         <Text
-          className={`
-            font-bold
-            ${isPrimary ? 'text-white text-base' : ''}
-            ${isOutline ? 'text-success text-sm' : ''}
-            ${textClassName}
-          `}
-        >
-          {label}
+          style={[
+            styles.text,
+            isPrimary ? styles.textPrimary : styles.textOutline,
+          ]}>
+          {title}
         </Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    paddingVertical: SPACING.sm + 4,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primary: { backgroundColor: colors.primary },
+  outline: {
+    borderWidth: 1,
+    borderColor: colors.success,
+    backgroundColor: colors.white,
+  },
+  text: { fontWeight: '700', fontSize: 15 },
+  textPrimary: { color: colors.white },
+  textOutline: { color: colors.success },
+});

@@ -1,35 +1,71 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { colors } from '@/constants/Colors';
+import { SPACING } from '@/constants/theme';
 
-export function AppHeader() {
+type Props = {
+  cartCount?: number;
+  onMenuPress?: () => void;
+  title?: string;
+};
+
+export function AppHeader({ cartCount = 0, onMenuPress, title }: Props) {
   const router = useRouter();
+  const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'Ajanta Shoes';
 
   return (
-    <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-light-gray">
-      <TouchableOpacity onPress={() => router.push('/profile')}>
-        <Ionicons name="menu" size={28} color={Colors.darkGray} />
-      </TouchableOpacity>
-      
-      <View className="flex-1 items-center">
-        <Text className="text-xl font-bold text-primary tracking-tight">SALIM FOOTWEAR</Text>
-      </View>
-      
-      <View className="flex-row items-center gap-4">
-        <TouchableOpacity>
-          <Ionicons name="bookmark-outline" size={24} color={Colors.darkGray} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => router.push('/cart')} className="relative">
-          <Ionicons name="cart-outline" size={26} color={Colors.darkGray} />
-          {/* Mocked cart badge for now */}
-          <View className="absolute -top-1 -right-2 bg-primary rounded-full w-4 h-4 items-center justify-center">
-            <Text className="text-white text-[10px] font-bold">3</Text>
+    <View style={styles.row}>
+      <Pressable onPress={onMenuPress} hitSlop={8}>
+        <Ionicons name="menu" size={26} color={colors.darkGray} />
+      </Pressable>
+      <Text style={styles.logo}>{title ?? appName}</Text>
+      <View style={styles.icons}>
+        <Pressable hitSlop={8}>
+          <Ionicons name="bookmark-outline" size={22} color={colors.darkGray} />
+        </Pressable>
+        <Pressable onPress={() => router.push('/cart')} hitSlop={8}>
+          <View>
+            <Ionicons name="cart-outline" size={24} color={colors.darkGray} />
+            {cartCount > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {cartCount > 99 ? '99+' : cartCount}
+                </Text>
+              </View>
+            ) : null}
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  logo: {
+    flex: 1,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 16,
+    color: colors.primary,
+  },
+  icons: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  badge: {
+    position: 'absolute',
+    right: -8,
+    top: -6,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 18,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  badgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
+});

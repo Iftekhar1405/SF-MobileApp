@@ -1,24 +1,28 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button } from '../../components/ui/Button';
+import { Pressable } from 'react-native';
+import { colors } from '@/constants/Colors';
+import { SPACING } from '@/constants/theme';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  
   return (
-    <SafeAreaView className="flex-1 bg-white p-6 justify-center">
-      <Text className="text-2xl font-bold text-dark-gray mb-4 text-center">Reset Password</Text>
-      <Text className="text-medium-gray text-center mb-8">
-        Enter your mobile number or email to receive an OTP.
+    <View style={styles.flex}>
+      <Text style={styles.title}>Forgot password</Text>
+      <Text style={styles.body}>
+        OTP reset is not enabled on the API yet. Please contact support or use
+        the web portal.
       </Text>
-      
-      <Button 
-        label="Back to Login" 
-        variant="outline" 
-        onPress={() => router.back()} 
-      />
-    </SafeAreaView>
+      <Pressable onPress={() => router.back()}>
+        <Text style={styles.link}>Back to login</Text>
+      </Pressable>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1, padding: SPACING.lg, backgroundColor: colors.offWhite },
+  title: { fontSize: 20, fontWeight: '800', marginBottom: SPACING.md },
+  body: { color: colors.mediumGray, marginBottom: SPACING.lg },
+  link: { color: colors.primary, fontWeight: '700' },
+});

@@ -1,85 +1,124 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import type { Product } from '@/types/models';
+import { colors } from '@/constants/Colors';
+import { RADIUS, SHADOW, SPACING } from '@/constants/theme';
+import { mediaUrl } from '@/services/api';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { QuantityStepper } from './QuantityStepper';
-import { Colors } from '../../constants/colors';
-import { useRouter } from 'expo-router';
+import { getStockLevel, stockPillColors } from '@/utils/stockStatus';
+import { estimateStockUnits, optionCount } from '@/utils/productOptions';
 
-interface ProductCardProps {
-  id: string;
-  image: string;
-  name: string;
-  stock: number;
-  price: number;
-  optionCount: number;
-  badge?: string;
-  cartQuantity: number;
-  onAdd: () => void;
-  onUpdateQuantity: (qty: number) => void;
-}
+type Props = {
+  product: Product;
+  cartQty: number;
+  onOpenOptions: () => void;
+  onAddSingle: () => void;
+  onChangeQty: (next: number) => void;
+};
 
 export function ProductCard({
-  id, image, name, stock, price, optionCount, badge, cartQuantity, onAdd, onUpdateQuantity
-}: ProductCardProps) {
-  const router = useRouter();
-  
-  const isOutOfStock = stock <= 0;
-  const isLowStock = stock > 0 && stock < 10;
-  
-  const handlePress = () => {
-    router.push(`/product/${id}` as any);
-  };
+  product,
+  cartQty,
+  onOpenOptions,
+  onAddSingle,
+  onChangeQty,
+}: Props) {
+  const img = mediaUrl(product.images?.[0]);
+  const opts = optionCount(product);
+  const stockUnits = estimateStockUnits(product);
+  const level = getStockLevel(stockUnits, product.inStock);
+  const pill = stockPillColors(level);
+  const name = `${product.brand} | ${product.category ?? ''} | Carton`.trim();
 
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
-      onPress={handlePress}
-      className="bg-white rounded-xl shadow-sm border border-light-gray w-[48%] mb-4 overflow-hidden"
-    >
-      <View className="relative w-full aspect-square bg-off-white items-center justify-center">
-        {/* Placeholder for Image */}
-        <Text className="text-6xl opacity-50">👟</Text>
-        
-        {badge && (
-          <View className="absolute top-2 left-2 right-2">
-            <Badge label={badge} className="bg-purple-100 w-full text-center py-1" />
-          </View>
-        )}
-      </View>
-      
-      <View className="p-3">
-        <Text className="font-bold text-dark-gray text-sm mb-2" numberOfLines={2}>{name}</Text>
-        
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="font-bold text-success text-base">₹ {price.toLocaleString('en-IN')}</Text>
-          {isOutOfStock ? (
-            <Badge label="OUT OF STOCK" type="error" />
-          ) : (
-            <Badge label={`Stock: ${stock}`} type={isLowStock ? 'warning' : 'success'} />
-          )}
+    <View style={styles.card}>
+      {product.material ? (
+        <View style={styles.badgeWrap}>
+          <Badge label={product.material.toUpperCase()} variant="muted" />
         </View>
-        
-        {cartQuantity > 0 ? (
-          <QuantityStepper 
-            value={cartQuantity}
-            onIncrement={() => onUpdateQuantity(cartQuantity + 1)}
-            onDecrement={() => onUpdateQuantity(cartQuantity - 1)}
-            optionLabel={`${optionCount} options`}
-          />
-        ) : (
-          <View className="items-center">
-            <Button 
-              label="Add" 
-              variant="outline" 
-              onPress={onAdd}
-              disabled={isOutOfStock}
-              className="w-full py-1.5"
-            />
-            <Text className="text-[10px] text-medium-gray mt-1">{optionCount} options</Text>
-          </View>
-        )}
+      ) : null}
+      <Pressable onPress={onOpenOptions}>
+        <Image
+          source={img ? { uri: img } : undefined}
+          style={styles.image}
+          contentFit="contain"
+        />
+      </Pressable>
+      <Text numberOfLines={2} style={styles.title}>
+        {name}
+      </Text>
+      <View style={styles.row}>
+        <View style={[styles.stockPill, { backgroundColor: pill.bg }]}>
+          <Text style={{ color: pill.text, fontWeight: '700', fontSize: 11 }}>
+            Stock: {stockUnits}
+          </Text>
+        </View>
+        <Text style={styles.price}>
+          ₹{' '}
+          {product.price.toLocaleString('en-IN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          })}
+        </Text>
       </View>
-    </TouchableOpacity>
+      {opts > 1 ? (
+        <Button
+          title={
+            cartQty > 0
+              ? `Manage · ${cartQty} carton(s) · ${opts} options`
+              : `Add · ${opts} options`
+          }
+          variant="outline"
+          onPress={onOpenOptions}
+        />
+      ) : cartQty <= 0 ? (
+        <Button title="Add" variant="outline" onPress={onAddSingle} />
+      ) : (
+        <QuantityStepper
+          value={cartQty}
+          onDecrement={() => onChangeQty(Math.max(0, cartQty - 1))}
+          onIncrement={() => onChangeQty(cartQty + 1)}
+        />
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
+    ...SHADOW.card,
+    margin: SPACING.xs,
+  },
+  badgeWrap: { position: 'absolute', top: 8, left: 8, zIndex: 2 },
+  image: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: colors.white,
+    borderRadius: RADIUS.sm,
+  },
+  title: {
+    marginTop: SPACING.sm,
+    fontWeight: '700',
+    color: colors.darkGray,
+    fontSize: 13,
+    minHeight: 36,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: SPACING.sm,
+  },
+  stockPill: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  price: { color: colors.success, fontWeight: '700' },
+});

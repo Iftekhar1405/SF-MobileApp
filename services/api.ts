@@ -1,18 +1,18 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
+import { deleteAuthToken, getAuthToken } from '@/utils/tokenStorage';
 
-// Assuming the API is running locally or a deployed URL
-// Make sure to replace this with the actual URL
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1' || 'https://saleem-footwear-api.vercel.app/api/v1';
+const baseURL =
+  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL,
   timeout: 15000,
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('authToken');
-  if (token && config.headers) {
+  const token = await getAuthToken();
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -22,10 +22,21 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync('authToken');
-      // In a real app we might emit an event or use a ref to navigate
-      // router.replace('/(auth)/login');
+      await deleteAuthToken();
+      try {
+        router.replace('/(auth)/login');
+      } catch {
+        /* router not ready */
+      }
     }
     return Promise.reject(error);
   }
 );
+
+export function mediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith('http')) return path;
+  const base = process.env.EXPO_PUBLIC_MEDIA_BASE;
+  if (!base) return path;
+  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+}
