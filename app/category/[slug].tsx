@@ -16,7 +16,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { FilterChip } from '@/components/ui/FilterChip';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import {
   useAddToCart,

@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 
 type Props = { amount: number; strikethrough?: number };
 

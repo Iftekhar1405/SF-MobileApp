@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useOrder } from '@/hooks/useOrders';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';

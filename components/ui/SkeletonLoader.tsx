@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS } from '@/constants/theme';
 
 type Props = { height?: number; style?: object };

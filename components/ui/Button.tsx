@@ -5,7 +5,7 @@ import {
   Text,
   ViewStyle,
 } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 
 type Props = {

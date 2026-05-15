@@ -18,7 +18,7 @@ import { Image } from 'expo-image';
 import { Button } from '@/components/ui/Button';
 import { MOQWarningRow } from '@/components/ui/MOQWarningRow';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { getMoqForCategory } from '@/constants/moq';
 import { SPACING } from '@/constants/theme';
 import {

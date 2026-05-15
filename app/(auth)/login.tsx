@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';

@@ -1,4 +1,4 @@
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 
 const LOW_STOCK_THRESHOLD = 5;
 

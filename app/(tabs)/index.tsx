@@ -22,7 +22,7 @@ import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SkeletonBox } from '@/components/ui/SkeletonLoader';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
 import {

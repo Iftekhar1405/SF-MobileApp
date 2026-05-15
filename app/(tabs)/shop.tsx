@@ -18,7 +18,7 @@ import { CategoryCard } from '@/components/ui/CategoryCard';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import {
   useAddToCart,

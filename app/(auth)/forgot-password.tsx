@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
-import { colors } from '@/constants/Colors';
 import { SPACING } from '@/constants/theme';
+import { colors } from '@/constants/colors';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
