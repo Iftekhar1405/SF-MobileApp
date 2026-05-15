@@ -12,6 +12,7 @@ export const colors = {
   mensTile: '#00838F',
   womensTile: '#AD1457',
   kidsTile: '#2E7D32',
+  unisexTile: '#5E35B1',
 } as const;
 
 const tintColorLight = colors.primary;

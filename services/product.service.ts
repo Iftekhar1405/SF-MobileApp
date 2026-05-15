@@ -1,4 +1,5 @@
 import { api } from './api';
+import { normalizeBrand } from '@/utils/brand';
 import type { Product } from '@/types/models';
 
 export type ProductsPage = {
@@ -28,7 +29,7 @@ export async function fetchProducts(params: {
       limit: params.limit ?? 20,
       category: params.category,
       gender: params.gender,
-      brand: params.brand,
+      brand: params.brand ? normalizeBrand(params.brand) : undefined,
       material: params.material,
       inStock:
         params.inStock === undefined
@@ -53,7 +54,15 @@ export async function fetchProductById(id: string): Promise<Product> {
 
 export async function fetchBrands(): Promise<string[]> {
   const { data } = await api.get<{ brands: string[] }>('/products/brands');
-  return data.brands ?? [];
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const b of data.brands ?? []) {
+    const key = normalizeBrand(b);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    list.push(key);
+  }
+  return list;
 }
 
 export async function searchProductsByArticle(
