@@ -18,7 +18,7 @@ import { Image } from 'expo-image';
 import { Button } from '@/components/ui/Button';
 import { MOQWarningRow } from '@/components/ui/MOQWarningRow';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { getMoqForCategory } from '@/constants/moq';
 import { SPACING } from '@/constants/theme';
 import {
@@ -27,7 +27,10 @@ import {
   useUpdateCartItem,
 } from '@/hooks/useCart';
 import { usePlaceOrder } from '@/hooks/useOrders';
+import { useUserStore } from '@/store/userStore';
 import { mediaUrl } from '@/services/api';
+import { buildOrderWhatsAppMessage } from '@/utils/whatsappOrder';
+import { getWhatsAppAdminPhone, openWhatsAppChat } from '@/utils/openWhatsApp';
 import { searchProductsByArticle } from '@/services/product.service';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { isPopulatedProduct } from '@/utils/cartLines';
@@ -39,6 +42,7 @@ export default function CartScreen() {
   const upd = useUpdateCartItem();
   const del = useRemoveCartItem();
   const place = usePlaceOrder();
+  const profile = useUserStore((s) => s.profile);
 
   const [notes, setNotes] = useState('');
   const [scanner, setScanner] = useState(false);
@@ -200,11 +204,38 @@ export default function CartScreen() {
         <Button
           title="Place order"
           loading={place.isPending}
+          disabled={!cart?.items?.length || showMoq}
           onPress={async () => {
+            if (!cart?.items?.length) {
+              Toast.show({ type: 'error', text1: 'Cart is empty' });
+              return;
+            }
+            if (showMoq) {
+              Toast.show({
+                type: 'error',
+                text1: 'MOQ not met',
+                text2: 'Increase quantities to meet minimum order requirements.',
+              });
+              return;
+            }
             try {
-              await place.mutateAsync();
+              const order = await place.mutateAsync();
+              const message = buildOrderWhatsAppMessage({
+                order,
+                profile,
+                notes,
+              });
+              try {
+                await openWhatsAppChat(getWhatsAppAdminPhone(), message);
+              } catch {
+                Toast.show({
+                  type: 'info',
+                  text1: 'Order placed',
+                  text2: 'Could not open WhatsApp. Send the invoice manually.',
+                });
+              }
               Toast.show({ type: 'success', text1: 'Order placed' });
-              router.push('/(tabs)/payment');
+              router.push(`/orders/${order._id}`);
             } catch {
               Toast.show({ type: 'error', text1: 'Could not place order' });
             }

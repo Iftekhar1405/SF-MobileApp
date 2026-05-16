@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 
 type Props = { label: string; variant?: 'success' | 'warning' | 'error' | 'muted' };

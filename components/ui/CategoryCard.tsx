@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SHADOW, SPACING } from '@/constants/theme';
 import { mediaUrl } from '@/services/api';
 

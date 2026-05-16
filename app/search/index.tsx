@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { FilterChip } from '@/components/ui/FilterChip';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { searchProductsQuery } from '@/services/product.service';
 import { mediaUrl } from '@/services/api';

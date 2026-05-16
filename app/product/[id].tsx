@@ -17,7 +17,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Button } from '@/components/ui/Button';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 import {
   useAddToCart,

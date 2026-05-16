@@ -16,9 +16,10 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { ProductCard } from '@/components/ui/ProductCard';
+import { GenderTileRow } from '@/components/ui/GenderTileRow';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import {
   useAddToCart,
@@ -27,9 +28,11 @@ import {
   useUpdateCartItem,
 } from '@/hooks/useCart';
 import { useCategories } from '@/hooks/useCategories';
+import { useGendersWithCounts } from '@/hooks/useGenders';
 import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { cartQtyForProduct } from '@/utils/cartLines';
+import { normalizeBrand } from '@/utils/brand';
 import { expandProductOptions } from '@/utils/productOptions';
 import type { Product } from '@/types/models';
 
@@ -37,7 +40,10 @@ export default function ShopScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ brand?: string }>();
-  const brand = Array.isArray(params.brand) ? params.brand[0] : params.brand;
+  const rawBrand = Array.isArray(params.brand) ? params.brand[0] : params.brand;
+  const brand = rawBrand
+    ? normalizeBrand(decodeURIComponent(rawBrand))
+    : undefined;
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
@@ -46,6 +52,8 @@ export default function ShopScreen() {
   const addMut = useAddToCart();
   const updMut = useUpdateCartItem();
   const delMut = useRemoveCartItem();
+
+  const { data: genderCounts } = useGendersWithCounts();
 
   const {
     data: categories,
@@ -60,7 +68,7 @@ export default function ShopScreen() {
   });
 
   const brandProducts = useProductsInfinite({
-    brand: brand ? decodeURIComponent(brand) : undefined,
+    brand,
     pageSize: 20,
     enabled: Boolean(brand),
   });
@@ -83,7 +91,7 @@ export default function ShopScreen() {
         </Pressable>
         {brand ? (
           <View style={styles.brandBanner}>
-            <Text style={styles.brandText}>Brand: {decodeURIComponent(brand)}</Text>
+            <Text style={styles.brandText}>Brand: {brand}</Text>
             <Pressable onPress={() => router.replace('/(tabs)/shop')}>
               <Text style={styles.clear}>Clear</Text>
             </Pressable>
@@ -156,7 +164,10 @@ export default function ShopScreen() {
             />
           }
           contentContainerStyle={{ padding: SPACING.md, paddingBottom: 120 }}>
-          <Text style={styles.h}>Browse categories</Text>
+          <Text style={styles.h}>Shop by gender</Text>
+          <GenderTileRow counts={genderCounts} compact />
+
+          <Text style={[styles.h, { marginTop: SPACING.md }]}>Browse categories</Text>
           {isLoading ? (
             <ActivityIndicator />
           ) : (
@@ -176,16 +187,30 @@ export default function ShopScreen() {
 
           <Text style={[styles.h, { marginTop: SPACING.lg }]}>Brands</Text>
           <View style={styles.brandRow}>
-            {(brands ?? []).map((b) => (
-              <Pressable
-                key={b}
-                onPress={() =>
-                  router.push(`/(tabs)/shop?brand=${encodeURIComponent(b)}`)
-                }
-                style={styles.brandPill}>
-                <Text style={styles.brandPillText}>{b}</Text>
-              </Pressable>
-            ))}
+            {(brands ?? []).map((b) => {
+              const name = normalizeBrand(b);
+              return (
+                <Pressable
+                  key={name}
+                  onPress={() =>
+                    router.push(
+                      `/(tabs)/shop?brand=${encodeURIComponent(name)}`
+                    )
+                  }
+                  style={[
+                    styles.brandPill,
+                    brand === name && styles.brandPillActive,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.brandPillText,
+                      brand === name && styles.brandPillTextActive,
+                    ]}>
+                    {name}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </ScrollView>
       )}
@@ -213,6 +238,11 @@ const styles = StyleSheet.create({
     borderColor: colors.lightGray,
   },
   brandPillText: { fontWeight: '700', color: colors.primary },
+  brandPillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  brandPillTextActive: { color: colors.white },
   brandBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',

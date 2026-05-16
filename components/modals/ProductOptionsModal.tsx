@@ -7,7 +7,7 @@ import {
 import { forwardRef, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Cart, Product } from '@/types/models';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 import { expandProductOptions, type ProductOptionRow } from '@/utils/productOptions';
 import { isPopulatedProduct } from '@/utils/cartLines';

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 
 type Props = {

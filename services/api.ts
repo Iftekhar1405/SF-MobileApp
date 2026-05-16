@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { router } from 'expo-router';
 import { deleteAuthToken, getAuthToken } from '@/utils/tokenStorage';
+import { resolveApiBaseUrl } from '@/utils/resolveApiBaseUrl';
 
-const baseURL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+const rawApiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1';
+const baseURL = resolveApiBaseUrl(rawApiUrl);
 
 export const api = axios.create({
   baseURL,

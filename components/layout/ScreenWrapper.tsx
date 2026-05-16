@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 
 type Props = {

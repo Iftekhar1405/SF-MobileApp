@@ -22,7 +22,7 @@ import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SkeletonBox } from '@/components/ui/SkeletonLoader';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
 import {
@@ -36,9 +36,12 @@ import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
 import { cartQtyForProduct } from '@/utils/cartLines';
+import { normalizeBrand } from '@/utils/brand';
 import { expandProductOptions } from '@/utils/productOptions';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
+import { GenderTileRow } from '@/components/ui/GenderTileRow';
+import { useGendersWithCounts } from '@/hooks/useGenders';
 import type { Product } from '@/types/models';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -56,6 +59,8 @@ export default function HomeScreen() {
   const addMut = useAddToCart();
   const updMut = useUpdateCartItem();
   const delMut = useRemoveCartItem();
+
+  const { data: genderCounts } = useGendersWithCounts();
 
   const {
     data: categories,
@@ -176,20 +181,7 @@ export default function HomeScreen() {
           actionLabel="See more"
           onAction={() => router.push('/(tabs)/shop')}
         />
-        <View style={styles.genderRow}>
-          {[
-            { label: "MEN'S", color: colors.mensTile, slug: 'g_Men' },
-            { label: "WOMEN'S", color: colors.womensTile, slug: 'g_Women' },
-            { label: "KIDS'", color: colors.kidsTile, slug: 'g_Kids' },
-          ].map((g) => (
-            <Pressable
-              key={g.slug}
-              onPress={() => router.push(`/category/${g.slug}`)}
-              style={[styles.genderTile, { backgroundColor: g.color }]}>
-              <Text style={styles.genderText}>{g.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <GenderTileRow counts={genderCounts} />
 
         <SectionHeader
           title="Shop by category"
@@ -220,15 +212,20 @@ export default function HomeScreen() {
           <ActivityIndicator />
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(brands ?? []).slice(0, 12).map((b) => (
-              <BrandCard
-                key={b}
-                name={b}
-                onPress={() =>
-                  router.push(`/(tabs)/shop?brand=${encodeURIComponent(b)}`)
-                }
-              />
-            ))}
+            {(brands ?? []).slice(0, 12).map((b) => {
+              const name = normalizeBrand(b);
+              return (
+                <BrandCard
+                  key={name}
+                  name={name}
+                  onPress={() =>
+                    router.push(
+                      `/(tabs)/shop?brand=${encodeURIComponent(name)}`
+                    )
+                  }
+                />
+              );
+            })}
           </ScrollView>
         )}
 
@@ -353,15 +350,6 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: SPACING.sm },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.lightGray },
   dotActive: { backgroundColor: colors.primary },
-  genderRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg },
-  genderTile: {
-    flex: 1,
-    height: 88,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  genderText: { color: colors.white, fontWeight: '900', fontSize: 14 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   recGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 });

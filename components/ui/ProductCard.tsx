@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import type { Product } from '@/types/models';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { RADIUS, SHADOW, SPACING } from '@/constants/theme';
 import { mediaUrl } from '@/services/api';
 import { Badge } from './Badge';

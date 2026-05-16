@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 
 const tabs = [

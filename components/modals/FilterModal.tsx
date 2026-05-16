@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 
 type Props = { visible: boolean; onClose: () => void };
 

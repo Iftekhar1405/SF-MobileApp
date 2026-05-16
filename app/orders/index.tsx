@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
-import { colors } from '@/constants/Colors';
+import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useOrderHistory } from '@/hooks/useOrders';
 import type { Order } from '@/types/models';
