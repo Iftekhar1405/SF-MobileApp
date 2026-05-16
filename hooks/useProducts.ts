@@ -4,12 +4,15 @@ import {
   fetchProducts,
   fetchProductsByCategory,
 } from '@/services/product.service';
+import type { ProductSortOption } from '@/utils/sortProducts';
+import { toApiSortParams } from '@/utils/sortProducts';
 
 export function useProductsInfinite(filters: {
   category?: string;
   gender?: string;
   brand?: string;
   inStock?: boolean;
+  sort?: ProductSortOption;
   pageSize?: number;
   enabled?: boolean;
 }) {
@@ -26,6 +29,7 @@ export function useProductsInfinite(filters: {
         gender: filters.gender,
         brand: filters.brand,
         inStock: filters.inStock,
+        sort: toApiSortParams(filters.sort ?? 'default'),
       }),
     getNextPageParam: (last) =>
       last.currentPage < last.totalPages ? last.currentPage + 1 : undefined,
@@ -36,7 +40,9 @@ export function useCategoryProductsInfinite(params: {
   category: string;
   gender?: string;
   inStock?: boolean;
+  sort?: ProductSortOption;
   pageSize?: number;
+  enabled?: boolean;
 }) {
   const pageSize = params.pageSize ?? 20;
   return useInfiniteQuery({
@@ -49,10 +55,11 @@ export function useCategoryProductsInfinite(params: {
         page: pageParam,
         limit: pageSize,
         inStock: params.inStock,
+        sort: toApiSortParams(params.sort ?? 'default'),
       }),
     getNextPageParam: (last) =>
       last.currentPage < last.totalPages ? last.currentPage + 1 : undefined,
-    enabled: Boolean(params.category),
+    enabled: params.enabled !== false && Boolean(params.category),
   });
 }
 

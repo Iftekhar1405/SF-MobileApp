@@ -7,8 +7,11 @@ import { mediaUrl } from '@/services/api';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { QuantityStepper } from './QuantityStepper';
-import { getStockLevel, stockPillColors } from '@/utils/stockStatus';
-import { estimateStockUnits, optionCount } from '@/utils/productOptions';
+import {
+  formatProductCardName,
+  isProductInStock,
+  optionCount,
+} from '@/utils/productOptions';
 
 type Props = {
   product: Product;
@@ -17,6 +20,11 @@ type Props = {
   onAddSingle: () => void;
   onChangeQty: (next: number) => void;
 };
+
+const STOCK_STYLES = {
+  in: { bg: '#E8F5E9', text: colors.success, label: 'In Stock' },
+  out: { bg: '#FFEBEE', text: colors.error, label: 'Out of Stock' },
+} as const;
 
 export function ProductCard({
   product,
@@ -27,10 +35,9 @@ export function ProductCard({
 }: Props) {
   const img = mediaUrl(product.images?.[0]);
   const opts = optionCount(product);
-  const stockUnits = estimateStockUnits(product);
-  const level = getStockLevel(stockUnits, product.inStock);
-  const pill = stockPillColors(level);
-  const name = `${product.brand} | ${product.category ?? ''} | Carton`.trim();
+  const inStock = isProductInStock(product);
+  const stock = inStock ? STOCK_STYLES.in : STOCK_STYLES.out;
+  const name = formatProductCardName(product);
 
   return (
     <View style={styles.card}>
@@ -50,9 +57,9 @@ export function ProductCard({
         {name}
       </Text>
       <View style={styles.row}>
-        <View style={[styles.stockPill, { backgroundColor: pill.bg }]}>
-          <Text style={{ color: pill.text, fontWeight: '700', fontSize: 11 }}>
-            Stock: {stockUnits}
+        <View style={[styles.stockPill, { backgroundColor: stock.bg }]}>
+          <Text style={[styles.stockText, { color: stock.text }]}>
+            {stock.label}
           </Text>
         </View>
         <Text style={styles.price}>
@@ -119,6 +126,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: 999,
+  },
+  stockText: {
+    fontWeight: '700',
+    fontSize: 11,
   },
   price: { color: colors.success, fontWeight: '700' },
 });

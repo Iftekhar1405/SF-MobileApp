@@ -7,8 +7,8 @@ import { SPACING } from '@/constants/theme';
 const tabs = [
   {
     name: 'Home',
-    path: '/(tabs)',
-    match: (p: string) => !p.includes('/shop') && !p.includes('/payment'),
+    path: '/(tabs)/home',
+    match: (p: string) => p.includes('/home'),
   },
   { name: 'Shop', path: '/(tabs)/shop', match: (p: string) => p.includes('/shop') },
   {
@@ -31,7 +31,9 @@ export function BottomTabBar() {
           <Pressable
             key={t.name}
             style={styles.item}
-            onPress={() => router.push(t.path as '/(tabs)' | '/(tabs)/shop' | '/(tabs)/payment')}>
+            onPress={() =>
+              router.push(t.path as '/(tabs)/home' | '/(tabs)/shop' | '/(tabs)/payment')
+            }>
             <Ionicons
               name={
                 t.name === 'Home'

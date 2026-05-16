@@ -24,3 +24,5 @@ export function genderTileColor(
 ): string {
   return palette[colorKey];
 }
+
+export const ALL_CATEGORY_IMAGE = require('@/assets/images/utils/ALL_img.png');

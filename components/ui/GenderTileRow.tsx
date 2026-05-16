@@ -16,7 +16,6 @@ type Props = {
 
 export function GenderTileRow({ counts, compact }: Props) {
   const router = useRouter();
-
   const countFor = (opt: GenderOption) =>
     counts?.find((c) => c.id === opt.apiValue)?.count;
 

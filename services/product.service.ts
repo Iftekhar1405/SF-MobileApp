@@ -1,5 +1,6 @@
 import { api } from './api';
 import { normalizeBrand } from '@/utils/brand';
+import type { ApiSortParams } from '@/utils/sortProducts';
 import type { Product } from '@/types/models';
 
 export type ProductsPage = {
@@ -17,6 +18,7 @@ export async function fetchProducts(params: {
   brand?: string;
   material?: string;
   inStock?: boolean;
+  sort?: ApiSortParams;
 }): Promise<ProductsPage> {
   const { data } = await api.get<{
     products: Product[];
@@ -37,6 +39,8 @@ export async function fetchProducts(params: {
           : params.inStock
             ? 'true'
             : 'false',
+      sortBy: params.sort?.sortBy,
+      sortOrder: params.sort?.sortOrder,
     },
   });
   return {
@@ -81,6 +85,7 @@ export async function fetchProductsByCategory(params: {
   page?: number;
   limit?: number;
   inStock?: boolean;
+  sort?: ApiSortParams;
 }): Promise<ProductsPage> {
   const { data } = await api.get<{
     products: Product[];
@@ -99,6 +104,8 @@ export async function fetchProductsByCategory(params: {
           : params.inStock
             ? 'true'
             : 'false',
+      sortBy: params.sort?.sortBy,
+      sortOrder: params.sort?.sortOrder,
     },
   });
   return {

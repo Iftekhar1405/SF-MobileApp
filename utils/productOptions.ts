@@ -45,3 +45,34 @@ export function estimateStockUnits(product: Product): number {
   const colorsMap = product.colors ?? {};
   return Object.keys(colorsMap).length * (product.itemSet?.length ?? 1) * 10;
 }
+
+export function isProductInStock(product: Product): boolean {
+  if (product.inStock === false) return false;
+  if (product.colorsStock?.length) {
+    return product.colorsStock.some((c) => c.inStock !== false);
+  }
+  return true;
+}
+
+function formatItemSets(product: Product): string {
+  const sets = product.itemSet ?? [];
+  if (!sets.length) return '';
+  return sets.map((s) => `${s.size}×${s.lengths}`).join(' ');
+}
+
+/** Card title: [Article] [Brand] | [color] [item sets] */
+export function formatProductCardName(product: Product): string {
+  const article = product.article?.trim() ?? '';
+  const brand = product.brand?.trim() ?? '';
+  const left = [article, brand].filter(Boolean).join(' ');
+
+  const colorKeys = Object.keys(product.colors ?? {});
+  const color = colorKeys[0] ?? '';
+  const itemSets = formatItemSets(product);
+  const right = [color, itemSets].filter(Boolean).join(' ');
+
+  if (!left && !right) return brand || article || 'Product';
+  if (!right) return left;
+  if (!left) return right;
+  return `${left} | ${right}`;
+}

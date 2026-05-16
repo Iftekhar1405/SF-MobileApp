@@ -226,7 +226,7 @@ export default function ShopScreen() {
 }
 
 const styles = StyleSheet.create({
-  h: { fontSize: 14, fontWeight: '800', marginBottom: SPACING.sm, color: colors.darkGray },
+  h: { fontSize: 18, fontWeight: '800', marginBottom: SPACING.sm, color: colors.darkGray },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   brandPill: {

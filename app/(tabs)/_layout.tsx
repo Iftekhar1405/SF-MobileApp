@@ -24,7 +24,8 @@ export default function TabLayout() {
             <BottomTabBar />
           </View>
         )}>
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
+        <Tabs.Screen name="index" options={{ href: null }} />
+        <Tabs.Screen name="home" options={{ title: 'Home' }} />
         <Tabs.Screen name="shop" options={{ title: 'Shop' }} />
         <Tabs.Screen name="payment" options={{ title: 'Payment' }} />
       </Tabs>

@@ -40,7 +40,7 @@ export default function LoginScreen() {
       console.log("values", values);
       await login(values.identifier.trim(), values.password);
       console.log("login successful");
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/shop');
     } catch (e: unknown) {
       console.log("error", e);
       const msg =

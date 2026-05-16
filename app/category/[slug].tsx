@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { CategoryChip } from '@/components/ui/CategoryChip';
-import { FilterChip } from '@/components/ui/FilterChip';
+import { ProductSortMenu } from '@/components/modals/ProductSortMenu';
+import { GenderCategoryChip } from '@/components/ui/GenderCategoryChip';
+import { StockSegmentedControl } from '@/components/ui/StockSegmentedControl';
 import { HorizontalChipsSkeleton } from '@/components/ui/HorizontalChipsSkeleton';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/ProductGridSkeleton';
@@ -43,7 +44,9 @@ import {
 } from '@/utils/gender';
 import { expandProductOptions } from '@/utils/productOptions';
 import type { Product } from '@/types/models';
-import type { GenderApiValue } from '@/constants/genders';
+import { ALL_CATEGORY_IMAGE, type GenderApiValue } from '@/constants/genders';
+import { mediaUrl } from '@/services/api';
+import type { ProductSortOption } from '@/utils/sortProducts';
 
 export default function CategoryScreen() {
   const router = useRouter();
@@ -69,7 +72,15 @@ export default function CategoryScreen() {
   const category = !isGenderBrowse ? slug : undefined;
   const accent = genderAccentColor(apiGender);
 
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [inStockOnly, setInStockOnly] = useState<boolean | undefined>(undefined);
+  const [sortKey, setSortKey] = useState<ProductSortOption>('default');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedCategory(null);
+    setSortKey('default');
+  }, [apiGender, slug]);
   const sheetRef = useRef<BottomSheetModal>(null);
   const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
 
@@ -87,18 +98,36 @@ export default function CategoryScreen() {
   const genderQuery = useProductsInfinite({
     gender: apiGender,
     inStock: inStockOnly,
+    sort: sortKey,
     pageSize: 20,
-    enabled: isGenderBrowse && Boolean(apiGender),
+    enabled:
+      isGenderBrowse && Boolean(apiGender) && selectedCategory === null,
+  });
+
+  const genderCategoryQuery = useCategoryProductsInfinite({
+    category: selectedCategory ?? '',
+    gender: apiGender,
+    inStock: inStockOnly,
+    sort: sortKey,
+    pageSize: 20,
+    enabled:
+      isGenderBrowse && Boolean(apiGender) && selectedCategory !== null,
   });
 
   const catQuery = useCategoryProductsInfinite({
     category: category ?? '',
     gender: apiGender,
     inStock: inStockOnly,
+    sort: sortKey,
     pageSize: 20,
+    enabled: !isGenderBrowse,
   });
 
-  const activeQuery = isGenderBrowse ? genderQuery : catQuery;
+  const activeQuery = isGenderBrowse
+    ? selectedCategory === null
+      ? genderQuery
+      : genderCategoryQuery
+    : catQuery;
 
   const list = useMemo(
     () => activeQuery.data?.pages.flatMap((p) => p.products) ?? [],
@@ -110,8 +139,9 @@ export default function CategoryScreen() {
   const fetchNextPage = activeQuery.fetchNextPage;
   const refetch = activeQuery.refetch;
   const isFetchingNext = activeQuery.isFetchingNextPage;
-  const isLoading = activeQuery.isLoading && list.length === 0;
-  const showInitialLoad = isLoading;
+  const showProductsLoading =
+    activeQuery.isLoading ||
+    (activeQuery.isFetching && list.length === 0);
 
   const screenTitle = useMemo(() => {
     if (isGenderBrowse && apiGender) {
@@ -125,11 +155,11 @@ export default function CategoryScreen() {
   }, [isGenderBrowse, apiGender, category]);
 
   const subtitle = useMemo(() => {
-    if (showInitialLoad) return 'Loading products…';
+    if (showProductsLoading) return 'Loading products…';
     if (total != null) return `${total} product${total === 1 ? '' : 's'}`;
     if (list.length > 0) return `${list.length} product${list.length === 1 ? '' : 's'}`;
     return 'Browse catalogue';
-  }, [showInitialLoad, total, list.length]);
+  }, [showProductsLoading, total, list.length]);
 
   const openSheet = (p: Product) => {
     setSheetProduct(p);
@@ -138,12 +168,84 @@ export default function CategoryScreen() {
 
   const listBottomPad = cart && cart.totalItems > 0 ? 120 : SPACING.xl;
 
+  const listHeader = (
+    <View style={styles.categoryPanel}>
+      {isGenderBrowse ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Categories</Text>
+          {catsLoading ? (
+            <HorizontalChipsSkeleton />
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipsScrollView}
+              contentContainerStyle={styles.chipsScroll}>
+              <GenderCategoryChip
+                label="ALL"
+                image={ALL_CATEGORY_IMAGE}
+                active={selectedCategory === null}
+                accentColor={accent}
+                onPress={() => setSelectedCategory(null)}
+              />
+              {(subCats ?? []).map((c) => {
+                const uri = mediaUrl(c.image);
+                return (
+                  <GenderCategoryChip
+                    key={c.category}
+                    label={c.category}
+                    image={uri ? { uri } : ALL_CATEGORY_IMAGE}
+                    active={selectedCategory === c.category}
+                    accentColor={accent}
+                    onPress={() => setSelectedCategory(c.category)}
+                  />
+                );
+              })}
+            </ScrollView>
+          )}
+          {(subCats?.length ?? 0) === 0 && !catsLoading ? (
+            <Text style={styles.hint}>No categories for this section yet.</Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {isGenderBrowse ? <View style={styles.filterDivider} /> : null}
+
+      <View style={styles.filterBar}>
+        <StockSegmentedControl
+          inStockOnly={inStockOnly === true}
+          onChange={(on) => setInStockOnly(on ? true : undefined)}
+        />
+        <Pressable
+          onPress={() => setSortMenuOpen(true)}
+          style={({ pressed }) => [
+            styles.sortBtn,
+            sortKey !== 'default' && styles.sortBtnActive,
+            pressed && styles.sortBtnPressed,
+          ]}>
+          <Text
+            style={[
+              styles.sortBtnText,
+              sortKey !== 'default' && styles.sortBtnTextActive,
+            ]}>
+            Sort By
+          </Text>
+          <Ionicons
+            name="filter-outline"
+            size={18}
+            color={sortKey !== 'default' ? colors.primaryDark : colors.darkGray}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-        {apiGender ? (
+        {/* {apiGender ? (
           <View style={[styles.accentBar, { backgroundColor: accent }]} />
-        ) : null}
+        ) : null} */}
         <View style={styles.topRow}>
           <Pressable
             onPress={() => router.back()}
@@ -152,7 +254,7 @@ export default function CategoryScreen() {
             <Ionicons name="arrow-back" size={22} color={colors.darkGray} />
           </Pressable>
           <View style={styles.titleBlock}>
-            {showInitialLoad ? (
+            {showProductsLoading ? (
               <>
                 <SkeletonBox height={18} width="55%" style={styles.titleSkel} />
                 <SkeletonBox height={12} width="40%" style={styles.subSkel} />
@@ -180,85 +282,33 @@ export default function CategoryScreen() {
         </View>
       </View>
 
-      {isGenderBrowse ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Categories</Text>
-          {catsLoading ? (
-            <HorizontalChipsSkeleton />
-          ) : (subCats?.length ?? 0) > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipsScroll}>
-              {(subCats ?? []).map((c) => (
-                <CategoryChip
-                  key={c.category}
-                  label={c.category}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/category/[slug]',
-                      params: {
-                        slug: c.category,
-                        gender: apiGender!,
-                      },
-                    })
-                  }
-                />
-              ))}
-            </ScrollView>
+      <FlatList
+        style={styles.list}
+        data={showProductsLoading ? [] : list}
+        numColumns={2}
+        keyExtractor={(item) => item._id}
+        columnWrapperStyle={styles.columnWrap}
+        ListHeaderComponent={listHeader}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching && !showProductsLoading}
+            onRefresh={() => {
+              refetch();
+              refetchCats();
+              refetchCart();
+            }}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        onEndReached={() => {
+          if (!showProductsLoading) fetchNextPage();
+        }}
+        onEndReachedThreshold={0.35}
+        ListEmptyComponent={
+          showProductsLoading ? (
+            <ProductGridSkeleton count={6} />
           ) : (
-            <Text style={styles.hint}>No categories for this section yet.</Text>
-          )}
-        </View>
-      ) : null}
-
-      <View style={styles.filterSection}>
-        <Text style={styles.sectionLabel}>Availability</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersScroll}>
-          <FilterChip
-            label="ALL"
-            active={inStockOnly === undefined}
-            onPress={() => setInStockOnly(undefined)}
-          />
-          <FilterChip
-            label="IN STOCK"
-            active={inStockOnly === true}
-            onPress={() => setInStockOnly(true)}
-          />
-        </ScrollView>
-      </View>
-
-      {showInitialLoad ? (
-        <ScrollView
-          style={styles.loadingScroll}
-          contentContainerStyle={{ paddingBottom: listBottomPad }}
-          showsVerticalScrollIndicator={false}>
-          <ProductGridSkeleton count={6} />
-        </ScrollView>
-      ) : (
-        <FlatList
-          data={list}
-          numColumns={2}
-          keyExtractor={(item) => item._id}
-          columnWrapperStyle={styles.columnWrap}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching && !showInitialLoad}
-              onRefresh={() => {
-                refetch();
-                refetchCats();
-                refetchCart();
-              }}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-            />
-          }
-          onEndReached={() => fetchNextPage()}
-          onEndReachedThreshold={0.35}
-          ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
                 <Ionicons
@@ -274,55 +324,62 @@ export default function CategoryScreen() {
                   : 'Try changing the availability filter or check back later.'}
               </Text>
             </View>
-          }
-          ListFooterComponent={
-            isFetchingNext ? (
-              <View style={styles.footerLoader}>
-                <ActivityIndicator color={colors.primary} />
-                <Text style={styles.footerText}>Loading more…</Text>
-              </View>
-            ) : (
-              <View style={{ height: SPACING.md }} />
-            )
-          }
-          contentContainerStyle={[
-            styles.listContent,
-            list.length === 0 && styles.listContentEmpty,
-            { paddingBottom: listBottomPad },
-          ]}
-          renderItem={({ item }) => (
-            <View style={styles.cell}>
-              <ProductCard
-                product={item}
-                cartQty={cartQtyForProduct(cart, item._id)}
-                onOpenOptions={() => openSheet(item)}
-                onAddSingle={() => {
-                  const o = expandProductOptions(item)[0];
-                  if (!o) return;
-                  addMut.mutate({
-                    productId: item._id,
-                    quantity: 1,
-                    color: o.color,
-                    itemSet: [{ size: o.size, lengths: o.lengths }],
-                  });
-                }}
-                onChangeQty={(next) => {
-                  const line = cart?.items?.find((it) => {
-                    const pid =
-                      typeof it.productId === 'object' && it.productId
-                        ? it.productId._id
-                        : String(it.productId);
-                    return pid === item._id;
-                  });
-                  if (!line) return;
-                  if (next <= 0) delMut.mutate(line._id);
-                  else updMut.mutate({ itemId: line._id, quantity: next });
-                }}
-              />
+          )
+        }
+        ListFooterComponent={
+          isFetchingNext ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.footerText}>Loading more…</Text>
             </View>
-          )}
-        />
-      )}
+          ) : (
+            <View style={{ height: SPACING.md }} />
+          )
+        }
+        contentContainerStyle={[
+          styles.listContent,
+          list.length === 0 && styles.listContentEmpty,
+          { paddingBottom: listBottomPad },
+        ]}
+        renderItem={({ item }) => (
+          <View style={styles.cell}>
+            <ProductCard
+              product={item}
+              cartQty={cartQtyForProduct(cart, item._id)}
+              onOpenOptions={() => openSheet(item)}
+              onAddSingle={() => {
+                const o = expandProductOptions(item)[0];
+                if (!o) return;
+                addMut.mutate({
+                  productId: item._id,
+                  quantity: 1,
+                  color: o.color,
+                  itemSet: [{ size: o.size, lengths: o.lengths }],
+                });
+              }}
+              onChangeQty={(next) => {
+                const line = cart?.items?.find((it) => {
+                  const pid =
+                    typeof it.productId === 'object' && it.productId
+                      ? it.productId._id
+                      : String(it.productId);
+                  return pid === item._id;
+                });
+                if (!line) return;
+                if (next <= 0) delMut.mutate(line._id);
+                else updMut.mutate({ itemId: line._id, quantity: next });
+              }}
+            />
+          </View>
+        )}
+      />
+
+      <ProductSortMenu
+        visible={sortMenuOpen}
+        value={sortKey}
+        onSelect={setSortKey}
+        onClose={() => setSortMenuOpen(false)}
+      />
 
       {cart && cart.totalItems > 0 ? (
         <Pressable
@@ -368,10 +425,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     borderRadius: RADIUS.md,
-    backgroundColor: colors.offWhite,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -400,7 +457,12 @@ const styles = StyleSheet.create({
   },
   titleSkel: { borderRadius: RADIUS.sm },
   subSkel: { marginTop: SPACING.sm, borderRadius: RADIUS.sm },
-  section: { marginTop: SPACING.md },
+  categoryPanel: {
+    backgroundColor: colors.white,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
+  section: { paddingTop: SPACING.xs },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '800',
@@ -410,9 +472,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.md,
     marginBottom: SPACING.xs,
   },
+  chipsScrollView: {
+    backgroundColor: colors.white,
+  },
   chipsScroll: {
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.xs,
+    backgroundColor: colors.white,
   },
   hint: {
     paddingHorizontal: SPACING.md,
@@ -420,15 +486,50 @@ const styles = StyleSheet.create({
     color: colors.mediumGray,
     fontSize: 13,
   },
-  filterSection: { marginTop: SPACING.sm, marginBottom: SPACING.xs },
-  filtersScroll: {
+  filterDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.lightGray,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
+  },
+  filterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.sm,
+    backgroundColor: colors.white,
   },
-  loadingScroll: { flex: 1 },
+  sortBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    minHeight: 40,
+    borderRadius: RADIUS.pill,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  sortBtnActive: {
+    borderColor: colors.primaryTint,
+    backgroundColor: colors.primaryTint,
+  },
+  sortBtnPressed: { opacity: 0.88 },
+  sortBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.darkGray,
+  },
+  sortBtnTextActive: {
+    color: colors.primaryDark,
+    fontWeight: '800',
+  },
   columnWrap: {
     paddingHorizontal: SPACING.sm,
   },
+  list: { flex: 1 },
   listContent: { paddingTop: SPACING.xs },
   listContentEmpty: { flexGrow: 1 },
   cell: { flex: 1 },
