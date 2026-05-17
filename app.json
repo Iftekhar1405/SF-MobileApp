@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Ajanta Shoes",
-    "slug": "ajanta-shoes",
+    "name": "Salim Footwear",
+    "slug": "salimfootwear",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "salimmobileapp",
+    "scheme": "salimfootwear",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,17 +15,21 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ajantashoes.app"
+      "bundleIdentifier": "com.salimfootwear.app"
     },
     "android": {
-      "package": "com.ajantashoes.app",
+      "package": "com.salimfootwear.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#E8193C"
       },
       "edgeToEdgeEnabled": true,
       "usesCleartextTraffic": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +48,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4967254b-a853-4b73-a98e-3b367a29a936"
+      }
     }
   }
 }

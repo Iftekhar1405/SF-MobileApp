@@ -14,7 +14,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { CategoryCard } from '@/components/ui/CategoryCard';
+import { BrandBrowseSection } from '@/components/browse/BrandBrowseSection';
+import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { GenderTileRow } from '@/components/ui/GenderTileRow';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -65,7 +67,7 @@ export default function ShopScreen() {
     isRefetching,
   } = useCategories();
 
-  const { data: brands } = useQuery({
+  const { data: brands, isLoading: brandsLoading } = useQuery({
     queryKey: ['brands'],
     queryFn: fetchBrands,
   });
@@ -164,54 +166,25 @@ export default function ShopScreen() {
             />
           }
           contentContainerStyle={{ padding: SPACING.md, paddingBottom: 120 }}>
-          <Text style={styles.h}>Shop by gender</Text>
+          <SectionHeader title="Shop by gender" />
           <GenderTileRow counts={genderCounts} compact />
 
-          <Text style={[styles.h, { marginTop: SPACING.md }]}>Browse categories</Text>
-          {isLoading ? (
-            <ActivityIndicator />
-          ) : (
-            <View style={styles.grid}>
-              {(categories ?? []).map((c) => (
-                <CategoryCard
-                  key={c.category}
-                  title={c.category}
-                  image={c.image}
-                  onPress={() =>
-                    router.push(`/category/${encodeURIComponent(c.category)}`)
-                  }
-                />
-              ))}
-            </View>
-          )}
+          <CategoryBrowseSection
+            title="Browse categories"
+            categories={categories}
+            loading={isLoading}
+            onCategoryPress={(category) =>
+              router.push(`/category/${encodeURIComponent(category)}`)
+            }
+          />
 
-          <Text style={[styles.h, { marginTop: SPACING.lg }]}>Brands</Text>
-          <View style={styles.brandRow}>
-            {(brands ?? []).map((b) => {
-              const name = normalizeBrand(b);
-              return (
-                <Pressable
-                  key={name}
-                  onPress={() =>
-                    router.push(
-                      `/(tabs)/shop?brand=${encodeURIComponent(name)}`
-                    )
-                  }
-                  style={[
-                    styles.brandPill,
-                    brand === name && styles.brandPillActive,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.brandPillText,
-                      brand === name && styles.brandPillTextActive,
-                    ]}>
-                    {name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <BrandBrowseSection
+            brands={brands}
+            loading={brandsLoading}
+            onBrandPress={(name) =>
+              router.push(`/(tabs)/shop?brand=${encodeURIComponent(name)}`)
+            }
+          />
         </ScrollView>
       )}
 
@@ -227,23 +200,6 @@ export default function ShopScreen() {
 }
 
 const styles = StyleSheet.create({
-  h: { fontSize: 18, fontWeight: '800', marginBottom: SPACING.sm, color: colors.darkGray },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  brandRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  brandPill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 999,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.lightGray,
-  },
-  brandPillText: { fontWeight: '700', color: colors.primary },
-  brandPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  brandPillTextActive: { color: colors.white },
   brandBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',

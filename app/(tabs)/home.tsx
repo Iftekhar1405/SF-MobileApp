@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
@@ -16,12 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import { ScreenWrapper } from '@/components/layout/ScreenWrapper';
-import { BrandCard } from '@/components/ui/BrandCard';
-import { CategoryCard } from '@/components/ui/CategoryCard';
+import { BrandBrowseSection } from '@/components/browse/BrandBrowseSection';
+import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { SkeletonBox } from '@/components/ui/SkeletonLoader';
 import { colors } from '@/constants/colors';
 import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
@@ -36,7 +34,6 @@ import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
 import { cartQtyForProduct } from '@/utils/cartLines';
-import { normalizeBrand } from '@/utils/brand';
 import { expandProductOptions } from '@/utils/productOptions';
 import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
@@ -104,7 +101,7 @@ export default function HomeScreen() {
       refreshing={refreshing}
       onRefresh={onRefresh}
       style={{ paddingHorizontal: 0 }}>
-      <View style={{ paddingTop: insets.top, paddingHorizontal: SPACING.md }}>
+      <View style={{ paddingHorizontal: SPACING.md }}>
         <AppHeader
           cartCount={cartCount}
           onMenuPress={() => setDrawer(true)}
@@ -182,51 +179,31 @@ export default function HomeScreen() {
         />
         <GenderTileRow counts={genderCounts} />
 
-        <SectionHeader
-          title="Shop by category"
-          actionLabel="See more"
-          onAction={() => router.push('/(tabs)/shop')}
+        <CategoryBrowseSection
+          categories={categories}
+          loading={catLoading}
+          onCategoryPress={(category) =>
+            router.push(
+              `/category/${encodeURIComponent(category)}` as `/category/${string}`
+            )
+          }
+          showMore={{
+            mode: 'navigate',
+            onNavigate: () => router.push('/(tabs)/shop'),
+          }}
         />
-        {catLoading ? (
-          <SkeletonBox height={80} />
-        ) : (
-          <View style={styles.catGrid}>
-            {(categories ?? []).slice(0, 9).map((c) => (
-              <CategoryCard
-                key={c.category}
-                title={c.category}
-                image={c.image}
-                onPress={() =>
-                  router.push(
-                    `/category/${encodeURIComponent(c.category)}` as `/category/${string}`
-                  )
-                }
-              />
-            ))}
-          </View>
-        )}
 
-        <SectionHeader title="Shop by brand" actionLabel="See more" />
-        {brandsLoading ? (
-          <ActivityIndicator />
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(brands ?? []).slice(0, 12).map((b) => {
-              const name = normalizeBrand(b);
-              return (
-                <BrandCard
-                  key={name}
-                  name={name}
-                  onPress={() =>
-                    router.push(
-                      `/(tabs)/shop?brand=${encodeURIComponent(name)}`
-                    )
-                  }
-                />
-              );
-            })}
-          </ScrollView>
-        )}
+        <BrandBrowseSection
+          brands={brands}
+          loading={brandsLoading}
+          onBrandPress={(name) =>
+            router.push(`/(tabs)/shop?brand=${encodeURIComponent(name)}`)
+          }
+          showMore={{
+            mode: 'navigate',
+            onNavigate: () => router.push('/(tabs)/shop'),
+          }}
+        />
 
         <SectionHeader title="Top collections" />
         <FlatList
@@ -352,6 +329,5 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: SPACING.sm },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.lightGray },
   dotActive: { backgroundColor: colors.primary },
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   recGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 });
