@@ -16,6 +16,7 @@ import {
 type Props = {
   product: Product;
   cartQty: number;
+  onViewProduct: () => void;
   onOpenOptions: () => void;
   onAddSingle: () => void;
   onChangeQty: (next: number) => void;
@@ -29,6 +30,7 @@ const STOCK_STYLES = {
 export function ProductCard({
   product,
   cartQty,
+  onViewProduct,
   onOpenOptions,
   onAddSingle,
   onChangeQty,
@@ -46,16 +48,18 @@ export function ProductCard({
           <Badge label={product.material.toUpperCase()} variant="muted" />
         </View>
       ) : null}
-      <Pressable onPress={onOpenOptions}>
+      <Pressable onPress={onViewProduct}>
         <Image
           source={img ? { uri: img } : undefined}
           style={styles.image}
           contentFit="contain"
         />
       </Pressable>
-      <Text numberOfLines={2} style={styles.title}>
-        {name}
-      </Text>
+      <Pressable onPress={onViewProduct}>
+        <Text numberOfLines={2} style={styles.title}>
+          {name}
+        </Text>
+      </Pressable>
       <View style={styles.row}>
         <View style={[styles.stockPill, { backgroundColor: stock.bg }]}>
           <Text style={[styles.stockText, { color: stock.text }]}>

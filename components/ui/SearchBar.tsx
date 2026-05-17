@@ -1,5 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 
@@ -9,6 +16,7 @@ type Props = {
   editable?: boolean;
   value?: string;
   onChangeText?: (t: string) => void;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function SearchBar({
@@ -17,15 +25,28 @@ export function SearchBar({
   editable,
   value,
   onChangeText,
+  style,
 }: Props) {
+  if (onPress && !editable) {
+    return (
+      <Pressable onPress={onPress} style={[styles.wrap, style]}>
+        <Ionicons name="search" size={20} color={colors.mediumGray} />
+        <TextInput
+          pointerEvents="none"
+          style={styles.input}
+          placeholder={placeholder}
+          placeholderTextColor={colors.mediumGray}
+          editable={false}
+          value={value}
+        />
+      </Pressable>
+    );
+  }
+
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress || Boolean(editable)}
-      style={styles.wrap}>
+    <View style={[styles.wrap, style]}>
       <Ionicons name="search" size={20} color={colors.mediumGray} />
       <TextInput
-        pointerEvents={onPress && !editable ? 'none' : 'auto'}
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor={colors.mediumGray}
@@ -33,7 +54,7 @@ export function SearchBar({
         value={value}
         onChangeText={onChangeText}
       />
-    </Pressable>
+    </View>
   );
 }
 

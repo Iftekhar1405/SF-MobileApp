@@ -22,6 +22,7 @@ export type ProductOptionsModalProps = {
   product: Product | null;
   cart?: Cart;
   onClose: () => void;
+  onDismiss?: () => void;
 };
 
 function setsEqual(
@@ -64,7 +65,7 @@ function findLineId(cart: Cart | undefined, product: Product, row: ProductOption
 export const ProductOptionsModal = forwardRef<
   BottomSheetModal,
   ProductOptionsModalProps
->(({ product, cart, onClose }, ref) => {
+>(({ product, cart, onClose, onDismiss }, ref) => {
   const snapPoints = useMemo(() => ['72%', '92%'], []);
   const addMut = useAddToCart();
   const updMut = useUpdateCartItem();
@@ -76,6 +77,7 @@ export const ProductOptionsModal = forwardRef<
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
+        pressBehavior="close"
       />
     ),
     []
@@ -89,16 +91,16 @@ export const ProductOptionsModal = forwardRef<
     return imgs?.[0];
   };
 
-  if (!product) return null;
-
   return (
     <BottomSheetModal
       ref={ref}
       index={0}
       snapPoints={snapPoints}
       enablePanDownToClose
-      onDismiss={onClose}
+      onDismiss={onDismiss}
       backdropComponent={renderBackdrop}>
+      {product ? (
+        <>
       <View style={styles.header}>
         <Text numberOfLines={1} style={styles.title}>
           {product.brand} — All options
@@ -161,6 +163,8 @@ export const ProductOptionsModal = forwardRef<
         })}
         <Button title="Done" onPress={onClose} />
       </BottomSheetScrollView>
+        </>
+      ) : null}
     </BottomSheetModal>
   );
 });

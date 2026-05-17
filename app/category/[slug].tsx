@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { ProductSortMenu } from '@/components/modals/ProductSortMenu';
 import { GenderCategoryChip } from '@/components/ui/GenderCategoryChip';
 import { StockSegmentedControl } from '@/components/ui/StockSegmentedControl';
@@ -43,7 +43,6 @@ import {
   toApiGender,
 } from '@/utils/gender';
 import { expandProductOptions } from '@/utils/productOptions';
-import type { Product } from '@/types/models';
 import { ALL_CATEGORY_IMAGE, type GenderApiValue } from '@/constants/genders';
 import { mediaUrl } from '@/services/api';
 import type { ProductSortOption } from '@/utils/sortProducts';
@@ -81,8 +80,13 @@ export default function CategoryScreen() {
     setSelectedCategory(null);
     setSortKey('default');
   }, [apiGender, slug]);
-  const sheetRef = useRef<BottomSheetModal>(null);
-  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
+  const {
+    sheetRef,
+    sheetProduct,
+    openSheet,
+    dismissSheet,
+    handleSheetDismiss,
+  } = useProductOptionsSheet();
 
   const { data: cart, refetch: refetchCart } = useCartQuery();
   const addMut = useAddToCart();
@@ -160,11 +164,6 @@ export default function CategoryScreen() {
     if (list.length > 0) return `${list.length} product${list.length === 1 ? '' : 's'}`;
     return 'Browse catalogue';
   }, [showProductsLoading, total, list.length]);
-
-  const openSheet = (p: Product) => {
-    setSheetProduct(p);
-    sheetRef.current?.present();
-  };
 
   const listBottomPad = cart && cart.totalItems > 0 ? 120 : SPACING.xl;
 
@@ -346,6 +345,7 @@ export default function CategoryScreen() {
             <ProductCard
               product={item}
               cartQty={cartQtyForProduct(cart, item._id)}
+              onViewProduct={() => router.push(`/product/${item._id}`)}
               onOpenOptions={() => openSheet(item)}
               onAddSingle={() => {
                 const o = expandProductOptions(item)[0];
@@ -398,7 +398,8 @@ export default function CategoryScreen() {
         ref={sheetRef}
         product={sheetProduct}
         cart={cart}
-        onClose={() => sheetRef.current?.dismiss()}
+        onClose={dismissSheet}
+        onDismiss={handleSheetDismiss}
       />
     </View>
   );

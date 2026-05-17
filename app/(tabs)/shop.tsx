@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { ProductCard } from '@/components/ui/ProductCard';
@@ -34,8 +34,6 @@ import { fetchBrands } from '@/services/product.service';
 import { cartQtyForProduct } from '@/utils/cartLines';
 import { normalizeBrand } from '@/utils/brand';
 import { expandProductOptions } from '@/utils/productOptions';
-import type { Product } from '@/types/models';
-
 export default function ShopScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -45,8 +43,13 @@ export default function ShopScreen() {
     ? normalizeBrand(decodeURIComponent(rawBrand))
     : undefined;
 
-  const sheetRef = useRef<BottomSheetModal>(null);
-  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
+  const {
+    sheetRef,
+    sheetProduct,
+    openSheet,
+    dismissSheet,
+    handleSheetDismiss,
+  } = useProductOptionsSheet();
 
   const { data: cart, refetch: refetchCart } = useCartQuery();
   const addMut = useAddToCart();
@@ -77,18 +80,14 @@ export default function ShopScreen() {
     [brandProducts.data]
   );
 
-  const openSheet = (p: Product) => {
-    setSheetProduct(p);
-    sheetRef.current?.present();
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
       <View style={{ paddingTop: insets.top, paddingHorizontal: SPACING.md }}>
         <AppHeader cartCount={cart?.totalItems ?? 0} />
-        <Pressable onPress={() => router.push('/search')} style={{ marginVertical: SPACING.sm }}>
-          <SearchBar />
-        </Pressable>
+        <SearchBar
+          onPress={() => router.push('/search')}
+          style={{ marginVertical: SPACING.sm }}
+        />
         {brand ? (
           <View style={styles.brandBanner}>
             <Text style={styles.brandText}>Brand: {brand}</Text>
@@ -125,6 +124,7 @@ export default function ShopScreen() {
               <ProductCard
                 product={item}
                 cartQty={cartQtyForProduct(cart, item._id)}
+                onViewProduct={() => router.push(`/product/${item._id}`)}
                 onOpenOptions={() => openSheet(item)}
                 onAddSingle={() => {
                   const o = expandProductOptions(item)[0];
@@ -219,7 +219,8 @@ export default function ShopScreen() {
         ref={sheetRef}
         product={sheetProduct}
         cart={cart}
-        onClose={() => sheetRef.current?.dismiss()}
+        onClose={dismissSheet}
+        onDismiss={handleSheetDismiss}
       />
     </View>
   );

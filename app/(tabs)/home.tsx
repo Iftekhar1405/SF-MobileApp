@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -38,12 +38,10 @@ import { useUserStore } from '@/store/userStore';
 import { cartQtyForProduct } from '@/utils/cartLines';
 import { normalizeBrand } from '@/utils/brand';
 import { expandProductOptions } from '@/utils/productOptions';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
 import { GenderTileRow } from '@/components/ui/GenderTileRow';
 import { useGendersWithCounts } from '@/hooks/useGenders';
-import type { Product } from '@/types/models';
-
 const { width: SCREEN_W } = Dimensions.get('window');
 
 export default function HomeScreen() {
@@ -52,8 +50,13 @@ export default function HomeScreen() {
   const profile = useUserStore((s) => s.profile);
   const [drawer, setDrawer] = useState(false);
   const [bannerIdx, setBannerIdx] = useState(0);
-  const sheetRef = useRef<BottomSheetModal>(null);
-  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
+  const {
+    sheetRef,
+    sheetProduct,
+    openSheet: openOptions,
+    dismissSheet,
+    handleSheetDismiss,
+  } = useProductOptionsSheet();
 
   const { data: cart, refetch: refetchCart } = useCartQuery();
   const addMut = useAddToCart();
@@ -93,11 +96,6 @@ export default function HomeScreen() {
     ]);
   };
 
-  const openOptions = (p: Product) => {
-    setSheetProduct(p);
-    sheetRef.current?.present();
-  };
-
   const cartCount = cart?.totalItems ?? 0;
 
   return (
@@ -111,9 +109,10 @@ export default function HomeScreen() {
           cartCount={cartCount}
           onMenuPress={() => setDrawer(true)}
         />
-        <Pressable onPress={() => router.push('/search')} style={{ marginTop: SPACING.sm }}>
-          <SearchBar />
-        </Pressable>
+        <SearchBar
+          onPress={() => router.push('/search')}
+          style={{ marginTop: SPACING.sm }}
+        />
       </View>
 
       <View style={{ paddingHorizontal: SPACING.md }}>
@@ -239,6 +238,7 @@ export default function HomeScreen() {
               <ProductCard
                 product={item}
                 cartQty={cartQtyForProduct(cart, item._id)}
+                onViewProduct={() => router.push(`/product/${item._id}`)}
                 onOpenOptions={() => openOptions(item)}
                 onAddSingle={() => {
                   const o = expandProductOptions(item)[0];
@@ -275,6 +275,7 @@ export default function HomeScreen() {
               <ProductCard
                 product={p}
                 cartQty={cartQtyForProduct(cart, p._id)}
+                onViewProduct={() => router.push(`/product/${p._id}`)}
                 onOpenOptions={() => openOptions(p)}
                 onAddSingle={() => {
                   const o = expandProductOptions(p)[0];
@@ -314,7 +315,8 @@ export default function HomeScreen() {
         ref={sheetRef}
         product={sheetProduct}
         cart={cart}
-        onClose={() => sheetRef.current?.dismiss()}
+        onClose={dismissSheet}
+        onDismiss={handleSheetDismiss}
       />
     </ScreenWrapper>
   );
