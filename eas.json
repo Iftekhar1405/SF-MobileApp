@@ -9,10 +9,27 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://saleem-footwear-api.vercel.app/api/v1",
+        "EXPO_PUBLIC_APP_NAME": "Salim Footwear",
+        "EXPO_PUBLIC_ENVIRONMENT": "preview",
+        "EXPO_PUBLIC_WHATSAPP_ADMIN_PHONE": "917024191093",
+        "EXPO_PUBLIC_WEB_APP_URL": "https://salimfootwear.com"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://saleem-footwear-api.vercel.app/api/v1",
+        "EXPO_PUBLIC_APP_NAME": "Salim Footwear",
+        "EXPO_PUBLIC_ENVIRONMENT": "production",
+        "EXPO_PUBLIC_WHATSAPP_ADMIN_PHONE": "917024191093",
+        "EXPO_PUBLIC_WEB_APP_URL": "https://salimfootwear.com"
+      }
     }
   },
   "submit": {

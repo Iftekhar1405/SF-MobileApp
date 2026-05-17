@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { APP_NAME } from '@/constants/app';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 
@@ -12,7 +13,7 @@ type Props = {
 
 export function AppHeader({ cartCount = 0, onMenuPress, title }: Props) {
   const router = useRouter();
-  const appName = process.env.EXPO_PUBLIC_APP_NAME ?? 'Ajanta Shoes';
+  const appName = APP_NAME;
 
   return (
     <View style={styles.row}>

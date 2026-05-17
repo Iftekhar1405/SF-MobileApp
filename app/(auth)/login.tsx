@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
+import { APP_NAME } from '@/constants/app';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
@@ -58,7 +59,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
         <Text style={styles.brand}>
-          {process.env.EXPO_PUBLIC_APP_NAME ?? 'Ajanta Shoes'}
+          {APP_NAME}
         </Text>
         <Text style={styles.tag}>B2B wholesale ordering</Text>
 

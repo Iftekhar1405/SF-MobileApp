@@ -20,6 +20,7 @@ import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { APP_NAME } from '@/constants/app';
 import { colors } from '@/constants/colors';
 import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
@@ -118,7 +119,7 @@ export default function HomeScreen() {
             {profile?.shopName ?? 'M/S SALIM FOOTWEAR'}
           </Text>
           <Text style={styles.dealerMeta}>
-            Seller: {process.env.EXPO_PUBLIC_APP_NAME ?? 'Ajanta Shoes India Pvt. Ltd.'}
+            Seller: {APP_NAME}
           </Text>
           {profile?.address ? (
             <Text style={styles.dealerMeta}>{profile.address}</Text>
