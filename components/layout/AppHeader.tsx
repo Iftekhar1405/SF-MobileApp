@@ -1,27 +1,39 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { APP_NAME } from '@/constants/app';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 
+const BRAND_LOGO = require('@/assets/images/logo.png');
+
 type Props = {
   cartCount?: number;
   onMenuPress?: () => void;
+  /** Text override; when set, logo is hidden. */
   title?: string;
+  showLogo?: boolean;
 };
 
-export function AppHeader({ cartCount = 0, onMenuPress, title }: Props) {
+export function AppHeader({
+  cartCount = 0,
+  onMenuPress,
+  title,
+  showLogo = true,
+}: Props) {
   const router = useRouter();
-  const appName = APP_NAME;
+  const useBrandLogo = showLogo && !title;
 
   return (
     <View style={styles.row}>
-      <Pressable onPress={onMenuPress} hitSlop={8}>
-        <Ionicons name="menu" size={26} color={colors.darkGray} />
-      </Pressable>
-      <Text style={styles.logo}>{title ?? appName}</Text>
-      <View style={styles.icons}>
+      <View style={styles.sideLeft}>
+        <Pressable onPress={onMenuPress} hitSlop={8}>
+          <Ionicons name="menu" size={26} color={colors.darkGray} />
+        </Pressable>
+      </View>
+
+      <View style={styles.sideRight}>
         <Pressable hitSlop={8}>
           <Ionicons name="bookmark-outline" size={22} color={colors.darkGray} />
         </Pressable>
@@ -38,26 +50,66 @@ export function AppHeader({ cartCount = 0, onMenuPress, title }: Props) {
           </View>
         </Pressable>
       </View>
+
+      <View style={styles.centerOverlay} pointerEvents="none">
+        {useBrandLogo ? (
+          <Image
+            source={BRAND_LOGO}
+            style={styles.logoImage}
+            contentFit="contain"
+            accessibilityLabel={APP_NAME}
+          />
+        ) : (
+          <Text style={styles.logoText} numberOfLines={1}>
+            {title ?? APP_NAME}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
 
+const SIDE_INSET = 80;
+
 const styles = StyleSheet.create({
   row: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: SPACING.sm,
-    gap: SPACING.sm,
+    minHeight: 40,
   },
-  logo: {
+  sideLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 1,
+  },
+  sideRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: SPACING.md,
+    zIndex: 1,
+  },
+  centerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SIDE_INSET,
+  },
+  logoImage: {
+    width: 148,
+    height: 40,
+  },
+  logoText: {
     textAlign: 'center',
     fontWeight: '800',
     fontSize: 16,
     color: colors.primary,
   },
-  icons: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   badge: {
     position: 'absolute',
     right: -8,

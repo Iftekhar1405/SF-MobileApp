@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
@@ -21,9 +22,10 @@ const tabs = [
 export function BottomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, SPACING.sm) }]}>
       {tabs.map((t) => {
         const active = t.match(pathname);
         const color = active ? colors.primary : colors.mediumGray;
@@ -59,7 +61,6 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.lightGray,
     backgroundColor: colors.white,
-    paddingBottom: SPACING.sm,
     paddingTop: SPACING.sm,
   },
   item: { flex: 1, alignItems: 'center', gap: 4 },
