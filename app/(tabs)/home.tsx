@@ -20,7 +20,7 @@ import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { APP_NAME } from '@/constants/app';
+import { DealerProfileCard } from '@/components/home/DealerProfileCard';
 import { colors } from '@/constants/colors';
 import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
@@ -35,6 +35,7 @@ import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
 import { cartQtyForProduct } from '@/utils/cartLines';
+import { categoryDiscoverHref } from '@/utils/categoryBrowse';
 import { expandProductOptions } from '@/utils/productOptions';
 import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
@@ -114,17 +115,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={{ paddingHorizontal: SPACING.md }}>
-        <View style={styles.dealerCard}>
-          <Text style={styles.dealerTitle}>
-            {profile?.shopName ?? 'M/S SALIM FOOTWEAR'}
-          </Text>
-          <Text style={styles.dealerMeta}>
-            Seller: {APP_NAME}
-          </Text>
-          {profile?.address ? (
-            <Text style={styles.dealerMeta}>{profile.address}</Text>
-          ) : null}
-        </View>
+        <DealerProfileCard profile={profile} />
 
         <Text style={styles.sectionLabel}>Quick actions</Text>
         <View style={styles.quickRow}>
@@ -181,8 +172,10 @@ export default function HomeScreen() {
         <GenderTileRow counts={genderCounts} />
 
         <CategoryBrowseSection
+          title="Shop By Category"
           categories={categories}
           loading={catLoading}
+          previewCount={9}
           onCategoryPress={(category) =>
             router.push(
               `/category/${encodeURIComponent(category)}` as `/category/${string}`
@@ -190,7 +183,7 @@ export default function HomeScreen() {
           }
           showMore={{
             mode: 'navigate',
-            onNavigate: () => router.push('/(tabs)/shop'),
+            onNavigate: () => router.push(categoryDiscoverHref()),
           }}
         />
 
@@ -301,14 +294,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  dealerCard: {
-    backgroundColor: colors.white,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginVertical: SPACING.md,
-  },
-  dealerTitle: { fontWeight: '800', fontSize: 16, color: colors.darkGray },
-  dealerMeta: { marginTop: 4, color: colors.mediumGray, fontSize: 13 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '700',

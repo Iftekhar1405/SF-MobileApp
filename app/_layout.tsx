@@ -46,7 +46,7 @@ export default function RootLayout() {
     if (!hydrated || !loaded) return;
     const inAuth = segments[0] === '(auth)';
     if (!token && !inAuth) router.replace('/(auth)/login');
-    if (token && inAuth) router.replace('/(tabs)/shop');
+    if (token && inAuth) router.replace('/(tabs)/home');
   }, [hydrated, loaded, token, segments, router]);
 
   if (!loaded || !hydrated) return null;
