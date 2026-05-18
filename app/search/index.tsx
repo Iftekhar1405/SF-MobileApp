@@ -1,26 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { FilterChip } from '@/components/ui/FilterChip';
+import { SearchResultRow } from '@/components/ui/SearchResultRow';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
+import {
+  useAddToCart,
+  useCartQuery,
+} from '@/hooks/useCart';
+import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
 import { searchProductsQuery } from '@/services/product.service';
-import { mediaUrl } from '@/services/api';
+import { expandProductOptions } from '@/utils/productOptions';
 import type { Product } from '@/types/models';
 
 const RECENT_KEY = 'recentSearchesV1';
+const MAX_RECENT = 12;
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -31,6 +38,16 @@ export default function SearchScreen() {
   const [results, setResults] = useState<Product[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: cart } = useCartQuery();
+  const addMut = useAddToCart();
+  const {
+    sheetRef,
+    sheetProduct,
+    openSheet,
+    dismissSheet,
+    handleSheetDismiss,
+  } = useProductOptionsSheet();
 
   useEffect(() => {
     AsyncStorage.getItem(RECENT_KEY).then((raw) => {
@@ -62,7 +79,7 @@ export default function SearchScreen() {
       setResults((res.products ?? []) as Product[]);
       const raw = await AsyncStorage.getItem(RECENT_KEY);
       const prev = raw ? (JSON.parse(raw) as string[]) : [];
-      const next = [term, ...prev.filter((x) => x !== term)].slice(0, 8);
+      const next = [term, ...prev.filter((x) => x !== term)].slice(0, MAX_RECENT);
       await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(next));
       setRecent(next);
     } finally {
@@ -74,94 +91,105 @@ export default function SearchScreen() {
     runSearch(debounced);
   }, [debounced, runSearch]);
 
-  const [inStockOnly, setInStockOnly] = useState<boolean | undefined>(undefined);
-  const filtered = useMemo(() => {
-    if (inStockOnly == null) return results;
-    return results.filter((p) => (inStockOnly ? p.inStock !== false : true));
-  }, [results, inStockOnly]);
+  const addProductToCart = (product: Product) => {
+    const o = expandProductOptions(product)[0];
+    if (!o) return;
+    addMut.mutate({
+      productId: product._id,
+      quantity: 1,
+      color: o.color,
+      itemSet: [{ size: o.size, lengths: o.lengths }],
+    });
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
+    <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.darkGray} />
         </Pressable>
-        <View style={{ flex: 1 }}>
+        <View style={styles.searchWrap}>
           <SearchBar editable value={q} onChangeText={setQ} />
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: SPACING.md, flexDirection: 'row', gap: SPACING.sm }}>
-        <FilterChip
-          label="ALL"
-          active={inStockOnly === undefined}
-          onPress={() => setInStockOnly(undefined)}
-        />
-        <FilterChip
-          label="IN STOCK"
-          active={inStockOnly === true}
-          onPress={() => setInStockOnly(true)}
-        />
-      </View>
-
-      {recent.length && !q ? (
-        <View style={{ paddingHorizontal: SPACING.md }}>
+      {recent.length > 0 && !q ? (
+        <View style={styles.recentBlock}>
           <Text style={styles.section}>Recent</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-            {recent.map((r) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recentScroll}>
+            {recent.slice(0, MAX_RECENT).map((r) => (
               <Pressable key={r} onPress={() => setQ(r)} style={styles.pill}>
-                <Text>{r}</Text>
+                <Text style={styles.pillText}>{r}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </View>
       ) : null}
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: SPACING.lg }} />
+        <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
         <FlatList
-          data={filtered}
+          data={results}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: SPACING.md, paddingBottom: 120 }}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             debounced ? (
-              <Text style={{ textAlign: 'center', color: colors.mediumGray, marginTop: 24 }}>
-                No results
-              </Text>
+              <Text style={styles.empty}>No results</Text>
             ) : null
           }
           renderItem={({ item }) => (
-            <Pressable
-              style={styles.row}
-              onPress={() => router.push(`/product/${item._id}`)}>
-              <Image
-                source={item.images?.[0] ? { uri: mediaUrl(item.images[0]) } : undefined}
-                style={styles.thumb}
-                contentFit="contain"
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.brand}>{item.brand}</Text>
-                <Text style={styles.meta}>{item.article}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.mediumGray} />
-            </Pressable>
+            <SearchResultRow
+              product={item}
+              onPress={() => router.push(`/product/${item._id}`)}
+              onOpenOptions={() => openSheet(item)}
+              onAddToCart={() => addProductToCart(item)}
+            />
           )}
         />
       )}
+
+      <ProductOptionsModal
+        ref={sheetRef}
+        product={sheetProduct}
+        cart={cart}
+        onClose={dismissSheet}
+        onDismiss={handleSheetDismiss}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.offWhite },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
     paddingHorizontal: SPACING.md,
     paddingBottom: SPACING.sm,
+    backgroundColor: colors.white,
   },
-  section: { fontWeight: '800', marginBottom: SPACING.sm },
+  searchWrap: { flex: 1 },
+  recentBlock: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+  },
+  section: {
+    fontWeight: '800',
+    marginBottom: SPACING.sm,
+    color: colors.darkGray,
+  },
+  recentScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingRight: SPACING.md,
+  },
   pill: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
@@ -170,15 +198,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.lightGray,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lightGray,
+  pillText: { color: colors.darkGray, fontSize: 13 },
+  loader: { marginTop: SPACING.lg },
+  listContent: {
+    paddingBottom: 120,
+    backgroundColor: colors.white,
+    marginTop: SPACING.sm,
   },
-  thumb: { width: 56, height: 56, backgroundColor: colors.white, borderRadius: 10 },
-  brand: { fontWeight: '800', color: colors.darkGray },
-  meta: { color: colors.mediumGray, marginTop: 2 },
+  empty: {
+    textAlign: 'center',
+    color: colors.mediumGray,
+    marginTop: SPACING.xl,
+    fontSize: 14,
+  },
 });

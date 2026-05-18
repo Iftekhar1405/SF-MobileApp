@@ -60,6 +60,15 @@ function formatItemSets(product: Product): string {
   return sets.map((s) => `${s.size}×${s.lengths}`).join(' ');
 }
 
+/** Search/list line: article | all colors | item sets */
+export function formatSearchResultLine(product: Product): string {
+  const article = product.article?.trim() || '—';
+  const colorKeys = Object.keys(product.colors ?? {});
+  const colorsPart = colorKeys.length > 0 ? colorKeys.join(', ') : '—';
+  const itemSets = formatItemSets(product) || '—';
+  return `${article} | ${colorsPart} | ${itemSets}`;
+}
+
 /** Card title: [Article] [Brand] | [color] [item sets] */
 export function formatProductCardName(product: Product): string {
   const article = product.article?.trim() ?? '';
