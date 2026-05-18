@@ -45,6 +45,7 @@ import {
 import { expandProductOptions } from '@/utils/productOptions';
 import { ALL_CATEGORY_IMAGE, type GenderApiValue } from '@/constants/genders';
 import { mediaUrl } from '@/services/api';
+import { isCategoryDiscoverSlug } from '@/utils/categoryBrowse';
 import type { ProductSortOption } from '@/utils/sortProducts';
 
 export default function CategoryScreen() {
@@ -68,18 +69,26 @@ export default function CategoryScreen() {
   const apiGender: GenderApiValue | undefined =
     genderFromSlug ?? genderFromQuery;
   const isGenderBrowse = Boolean(genderFromSlug);
-  const category = !isGenderBrowse ? slug : undefined;
+  const isDiscoverAll = isCategoryDiscoverSlug(slug);
+  const isCategoryCatalogBrowse = !isGenderBrowse && Boolean(slug);
+  const showCategoryChips = isGenderBrowse || isCategoryCatalogBrowse;
+  const category =
+    !isGenderBrowse && !isDiscoverAll ? slug : undefined;
   const accent = genderAccentColor(apiGender);
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const initialSelectedCategory = isGenderBrowse || isDiscoverAll ? null : slug;
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    () => initialSelectedCategory
+  );
   const [inStockOnly, setInStockOnly] = useState<boolean | undefined>(undefined);
   const [sortKey, setSortKey] = useState<ProductSortOption>('default');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   useEffect(() => {
-    setSelectedCategory(null);
+    setSelectedCategory(isGenderBrowse || isDiscoverAll ? null : slug || null);
     setSortKey('default');
-  }, [apiGender, slug]);
+  }, [apiGender, slug, isGenderBrowse, isDiscoverAll]);
   const {
     sheetRef,
     sheetProduct,
@@ -97,7 +106,22 @@ export default function CategoryScreen() {
     data: subCats,
     isLoading: catsLoading,
     refetch: refetchCats,
-  } = useCategories(apiGender);
+  } = useCategories(isGenderBrowse ? apiGender : undefined);
+
+  const catalogAllQuery = useProductsInfinite({
+    inStock: inStockOnly,
+    sort: sortKey,
+    pageSize: 20,
+    enabled: isCategoryCatalogBrowse && selectedCategory === null,
+  });
+
+  const catalogCategoryQuery = useCategoryProductsInfinite({
+    category: selectedCategory ?? '',
+    inStock: inStockOnly,
+    sort: sortKey,
+    pageSize: 20,
+    enabled: isCategoryCatalogBrowse && selectedCategory !== null,
+  });
 
   const genderQuery = useProductsInfinite({
     gender: apiGender,
@@ -118,20 +142,13 @@ export default function CategoryScreen() {
       isGenderBrowse && Boolean(apiGender) && selectedCategory !== null,
   });
 
-  const catQuery = useCategoryProductsInfinite({
-    category: category ?? '',
-    gender: apiGender,
-    inStock: inStockOnly,
-    sort: sortKey,
-    pageSize: 20,
-    enabled: !isGenderBrowse,
-  });
-
   const activeQuery = isGenderBrowse
     ? selectedCategory === null
       ? genderQuery
       : genderCategoryQuery
-    : catQuery;
+    : selectedCategory === null
+      ? catalogAllQuery
+      : catalogCategoryQuery;
 
   const list = useMemo(
     () => activeQuery.data?.pages.flatMap((p) => p.products) ?? [],
@@ -151,12 +168,20 @@ export default function CategoryScreen() {
     if (isGenderBrowse && apiGender) {
       return genderDisplayName(apiGender);
     }
-    if (category && apiGender) {
-      return category;
+    if (isCategoryCatalogBrowse) {
+      if (isDiscoverAll || selectedCategory === null) return 'Shop By Category';
+      return selectedCategory;
     }
     if (category) return category;
     return 'Products';
-  }, [isGenderBrowse, apiGender, category]);
+  }, [
+    isGenderBrowse,
+    apiGender,
+    isCategoryCatalogBrowse,
+    isDiscoverAll,
+    selectedCategory,
+    category,
+  ]);
 
   const subtitle = useMemo(() => {
     if (showProductsLoading) return 'Loading products…';
@@ -169,7 +194,7 @@ export default function CategoryScreen() {
 
   const listHeader = (
     <View style={styles.categoryPanel}>
-      {isGenderBrowse ? (
+      {showCategoryChips ? (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Categories</Text>
           {catsLoading ? (
@@ -208,7 +233,7 @@ export default function CategoryScreen() {
         </View>
       ) : null}
 
-      {isGenderBrowse ? <View style={styles.filterDivider} /> : null}
+      {showCategoryChips ? <View style={styles.filterDivider} /> : null}
 
       <View style={styles.filterBar}>
         <StockSegmentedControl

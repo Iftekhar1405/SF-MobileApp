@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     marginBottom: SPACING.lg,
   },
-  rowCompact: { marginBottom: SPACING.md },
+  rowCompact: { marginBottom: SPACING.sm },
   tile: {
     flex: 1,
     minWidth: 0,

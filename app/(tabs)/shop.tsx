@@ -35,6 +35,7 @@ import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { cartQtyForProduct } from '@/utils/cartLines';
 import { normalizeBrand } from '@/utils/brand';
+import { categoryDiscoverHref } from '@/utils/categoryBrowse';
 import { expandProductOptions } from '@/utils/productOptions';
 export default function ShopScreen() {
   const router = useRouter();
@@ -83,12 +84,12 @@ export default function ShopScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
-      <View style={{ paddingTop: insets.top, paddingHorizontal: SPACING.md }}>
+    <View style={styles.screen}>
+      <View style={[styles.headerBlock, { paddingTop: insets.top }]}>
         <AppHeader cartCount={cart?.totalItems ?? 0} />
         <SearchBar
           onPress={() => router.push('/search')}
-          style={{ marginVertical: SPACING.sm }}
+          style={styles.searchBar}
         />
         {brand ? (
           <View style={styles.brandBanner}>
@@ -165,17 +166,32 @@ export default function ShopScreen() {
               }}
             />
           }
-          contentContainerStyle={{ padding: SPACING.md, paddingBottom: 120 }}>
-          <SectionHeader title="Shop by gender" />
-          <GenderTileRow counts={genderCounts} compact />
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <SectionHeader
+              title="Shop By Gender"
+              variant="prominent"
+              // actionLabel="See more"
+              onAction={() => router.push('/category/g_male')}
+            />
+            <GenderTileRow counts={genderCounts} compact />
+          </View>
 
           <CategoryBrowseSection
-            title="Browse categories"
+            title="Shop By Category"
             categories={categories}
             loading={isLoading}
+            previewCount={9}
             onCategoryPress={(category) =>
-              router.push(`/category/${encodeURIComponent(category)}`)
+              router.push(
+                `/category/${encodeURIComponent(category)}` as `/category/${string}`
+              )
             }
+            showMore={{
+              mode: 'navigate',
+              onNavigate: () => router.push(categoryDiscoverHref()),
+            }}
           />
 
           <BrandBrowseSection
@@ -200,6 +216,26 @@ export default function ShopScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.offWhite },
+  headerBlock: {
+    backgroundColor: colors.white,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.lightGray,
+  },
+  searchBar: {
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  scrollContent: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingBottom: 120,
+  },
+  section: {
+    marginBottom: SPACING.xl,
+  },
   brandBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',

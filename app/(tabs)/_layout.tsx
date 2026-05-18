@@ -1,13 +1,11 @@
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { useEffect } from 'react';
 import { useUserStore } from '@/store/userStore';
 import { useProfile } from '@/hooks/useProfile';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
   const { data } = useProfile();
   const setProfile = useUserStore((s) => s.setProfile);
 
@@ -20,7 +18,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{ headerShown: false }}
         tabBar={() => (
-          <View style={{ paddingBottom: insets.bottom, backgroundColor: '#fff' }}>
+          <View style={{ backgroundColor: '#fff' }}>
             <BottomTabBar />
           </View>
         )}>

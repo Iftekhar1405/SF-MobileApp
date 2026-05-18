@@ -31,7 +31,9 @@ export function BrowseSectionLayout({
 }: Props) {
   const hasMore = totalCount > previewCount;
   const isNavigate = showMore.mode === 'navigate';
-  const showButton = hasMore && (isNavigate || !expanded);
+  const showButton = isNavigate
+    ? totalCount > 0
+    : hasMore && !expanded;
 
   const handleShowMore = () => {
     if (showMore.mode === 'navigate') showMore.onNavigate();
@@ -40,17 +42,19 @@ export function BrowseSectionLayout({
 
   return (
     <View style={styles.section}>
-      <SectionHeader title={title} />
+      <SectionHeader
+        title={title}
+        variant="prominent"
+        actionLabel={showButton && isNavigate ? 'See more' : undefined}
+        onAction={showButton && isNavigate ? handleShowMore : undefined}
+      />
       {loading ? (
         <ActivityIndicator style={styles.loader} />
       ) : (
         <>
           {children}
-          {showButton ? (
-            <ShowMoreButton
-              onPress={handleShowMore}
-              label={isNavigate ? 'See more' : 'Show more'}
-            />
+          {showButton && !isNavigate ? (
+            <ShowMoreButton onPress={handleShowMore} label="Show more" />
           ) : null}
         </>
       )}
@@ -59,6 +63,6 @@ export function BrowseSectionLayout({
 }
 
 const styles = StyleSheet.create({
-  section: { marginBottom: SPACING.md },
+  section: { marginBottom: SPACING.xl },
   loader: { marginVertical: SPACING.md },
 });
