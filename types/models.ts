@@ -4,6 +4,9 @@ export type User = {
   phone: string;
   shopName: string;
   address?: string;
+  deliveryAddress?: string;
+  pincode?: string;
+  landmark?: string;
   role?: string;
 };
 
@@ -50,6 +53,9 @@ export type Order = {
   totalPrice: number;
   totalItems: number;
   status: string;
+  deliveryAddress?: string;
+  pincode?: string;
+  landmark?: string;
   createdAt?: string;
   updatedAt?: string;
 };

@@ -65,6 +65,12 @@ export function buildOrderWhatsAppMessage(params: {
       ? `\n\n📝 *Notes:*\n${notes.trim()}`
       : '';
 
+  const deliveryBlock = order.deliveryAddress
+    ? `\n\n📍 *Delivery:*\n${order.deliveryAddress}${
+        order.pincode ? `\nPincode: ${order.pincode}` : ''
+      }${order.landmark ? `\nLandmark: ${order.landmark}` : ''}`
+    : '';
+
   return `🛒 *New Order Placed!*
 
 👤 *Customer:* ${customerLine}
@@ -74,7 +80,7 @@ export function buildOrderWhatsAppMessage(params: {
 ${itemDetails || '(No items)'}
 
 💰 *Order total:* ${formatCurrencyINR(order.totalPrice)}
-📊 *Total cartons:* ${order.totalItems}${notesBlock}
+📊 *Total cartons:* ${order.totalItems}${deliveryBlock}${notesBlock}
 
 🆔 *Order ID:* \`${order._id}\`
 

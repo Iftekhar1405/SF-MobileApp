@@ -3,6 +3,7 @@ import {
   fetchOrderById,
   fetchOrderHistory,
   placeOrder,
+  type PlaceOrderBody,
 } from '@/services/order.service';
 
 export function useOrderHistory() {
@@ -23,10 +24,11 @@ export function useOrder(id: string | undefined) {
 export function usePlaceOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: placeOrder,
+    mutationFn: (body?: PlaceOrderBody) => placeOrder(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cart'] });
       qc.invalidateQueries({ queryKey: ['orders', 'history'] });
+      qc.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

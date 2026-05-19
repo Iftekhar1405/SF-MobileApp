@@ -2,8 +2,15 @@ import axios from 'axios';
 import { api } from './api';
 import type { Order } from '@/types/models';
 
-export async function placeOrder(): Promise<Order> {
-  const { data } = await api.post<{ data: Order }>('/order');
+export type PlaceOrderBody = {
+  useShopAddress?: boolean;
+  deliveryAddress?: string;
+  pincode?: string;
+  landmark?: string;
+};
+
+export async function placeOrder(body?: PlaceOrderBody): Promise<Order> {
+  const { data } = await api.post<{ data: Order }>('/order', body ?? {});
   return data.data;
 }
 

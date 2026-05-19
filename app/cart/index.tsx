@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -14,23 +14,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { Image } from 'expo-image';
+import { CartEmptyState } from '@/components/cart/CartEmptyState';
+import { CartLineItem } from '@/components/cart/CartLineItem';
 import { Button } from '@/components/ui/Button';
-import { MOQWarningRow } from '@/components/ui/MOQWarningRow';
-import { QuantityStepper } from '@/components/ui/QuantityStepper';
 import { colors } from '@/constants/colors';
-import { getMoqForCategory } from '@/constants/moq';
 import { SPACING } from '@/constants/theme';
 import {
   useCartQuery,
   useRemoveCartItem,
   useUpdateCartItem,
 } from '@/hooks/useCart';
-import { usePlaceOrder } from '@/hooks/useOrders';
-import { useUserStore } from '@/store/userStore';
-import { mediaUrl } from '@/services/api';
-import { buildOrderWhatsAppMessage } from '@/utils/whatsappOrder';
-import { getWhatsAppAdminPhone, openWhatsAppChat } from '@/utils/openWhatsApp';
 import { searchProductsByArticle } from '@/services/product.service';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { isPopulatedProduct } from '@/utils/cartLines';
@@ -41,36 +34,13 @@ export default function CartScreen() {
   const { data: cart, refetch, isRefetching } = useCartQuery();
   const upd = useUpdateCartItem();
   const del = useRemoveCartItem();
-  const place = usePlaceOrder();
-  const profile = useUserStore((s) => s.profile);
 
-  const [notes, setNotes] = useState('');
   const [scanner, setScanner] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const scanLock = useRef(false);
 
-  const moqRows = useMemo(() => {
-    if (!cart?.items?.length) return [];
-    const totals = new Map<string, number>();
-    for (const it of cart.items) {
-      const cat =
-        isPopulatedProduct(it.productId) && it.productId.category
-          ? it.productId.category
-          : 'General';
-      totals.set(cat, (totals.get(cat) ?? 0) + it.quantity);
-    }
-    return Array.from(totals.entries()).map(([categoryName, cartQty]) => {
-      const minQty = getMoqForCategory(categoryName);
-      return {
-        categoryName,
-        minQty,
-        cartQty,
-        isViolating: cartQty < minQty,
-      };
-    });
-  }, [cart]);
-
-  const showMoq = moqRows.some((r) => r.isViolating);
+  const items = cart?.items ?? [];
+  const hasItems = items.length > 0;
 
   const openScanner = async () => {
     const res = await requestPermission();
@@ -104,7 +74,7 @@ export default function CartScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
+    <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <Pressable onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.darkGray} />
@@ -113,135 +83,81 @@ export default function CartScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={{ paddingHorizontal: SPACING.md, flexDirection: 'row', gap: SPACING.sm }}>
-        <TextInput
-          style={styles.search}
-          placeholder="Quick search / article"
-          placeholderTextColor={colors.mediumGray}
-        />
-        <Pressable style={styles.qr} onPress={openScanner}>
-          <Ionicons name="qr-code-outline" size={22} color={colors.darkGray} />
-        </Pressable>
-      </View>
+      {hasItems ? (
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.search}
+            placeholder="Quick search / article"
+            placeholderTextColor={colors.mediumGray}
+          />
+          <Pressable style={styles.qr} onPress={openScanner}>
+            <Ionicons name="qr-code-outline" size={22} color={colors.darkGray} />
+          </Pressable>
+        </View>
+      ) : null}
 
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />
-        }
-        contentContainerStyle={{ padding: SPACING.md, paddingBottom: 120 }}>
-        {showMoq ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>MOQ — By product category</Text>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.cell, { flex: 2 }]}>Name</Text>
-              <Text style={styles.cell}>Min</Text>
-              <Text style={styles.cell}>Cart</Text>
-            </View>
-            {moqRows.map((r) => (
-              <MOQWarningRow key={r.categoryName} {...r} />
-            ))}
-          </View>
-        ) : null}
-
-        {(cart?.items ?? []).map((it) => {
-          const p = isPopulatedProduct(it.productId) ? it.productId : null;
-          const img = p?.images?.[0];
-          const name = p ? `${p.brand} | ${it.color}` : 'Product';
-          const pcs = (it.itemSet?.[0]?.lengths ?? 0) * it.quantity;
-          return (
-            <View key={it._id} style={styles.line}>
-              <Image
-                source={img ? { uri: mediaUrl(img) } : undefined}
-                style={styles.thumb}
-                contentFit="contain"
+      {!hasItems ? (
+        <CartEmptyState />
+      ) : (
+        <>
+          <ScrollView
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={() => refetch()}
               />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sku}>{p?.article ?? ''}</Text>
-                <Text style={styles.lineName}>{name}</Text>
-                <Text style={styles.meta}>
-                  {it.itemSet?.[0]?.lengths ?? 0} pc in carton · Total {pcs} pcs
-                </Text>
-                <Text style={styles.price}>{formatCurrencyINR(it.price)}</Text>
-                <QuantityStepper
-                  value={it.quantity}
+            }
+            contentContainerStyle={styles.scrollContent}>
+            {items.map((it) => {
+              const p = isPopulatedProduct(it.productId) ? it.productId : null;
+              if (!p) return null;
+              const lineBusy =
+                (upd.isPending && upd.variables?.itemId === it._id) ||
+                (del.isPending && del.variables === it._id);
+              return (
+                <CartLineItem
+                  key={it._id}
+                  item={it}
+                  product={p}
+                  stepperDisabled={lineBusy}
                   onIncrement={() =>
                     upd.mutate({ itemId: it._id, quantity: it.quantity + 1 })
                   }
                   onDecrement={() =>
                     it.quantity <= 1
                       ? del.mutate(it._id)
-                      : upd.mutate({ itemId: it._id, quantity: it.quantity - 1 })
+                      : upd.mutate({
+                          itemId: it._id,
+                          quantity: it.quantity - 1,
+                        })
                   }
+                  onRemove={() => del.mutate(it._id)}
                 />
-              </View>
-              <Pressable onPress={() => del.mutate(it._id)} hitSlop={8}>
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-              </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View
+            style={[styles.footer, { paddingBottom: insets.bottom + SPACING.sm }]}>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerLabel}>Quantity</Text>
+              <Text style={styles.footerValue}>
+                {cart!.totalItems} carton{cart!.totalItems === 1 ? '' : 's'}
+              </Text>
             </View>
-          );
-        })}
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order details</Text>
-          <Text style={styles.meta}>Total quantity: {cart?.totalItems ?? 0}</Text>
-          <TextInput
-            style={[styles.search, { marginTop: SPACING.sm }]}
-            placeholder="Add notes"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-          />
-          <Text style={[styles.meta, { marginTop: SPACING.md }]}>
-            Deliver to — Add address (coming soon)
-          </Text>
-        </View>
-      </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.sm }]}>
-        <Text style={styles.footerTotal}>
-          Order value {formatCurrencyINR(cart?.totalPrice ?? 0)}
-        </Text>
-        <Button
-          title="Place order"
-          loading={place.isPending}
-          disabled={!cart?.items?.length || showMoq}
-          onPress={async () => {
-            if (!cart?.items?.length) {
-              Toast.show({ type: 'error', text1: 'Cart is empty' });
-              return;
-            }
-            if (showMoq) {
-              Toast.show({
-                type: 'error',
-                text1: 'MOQ not met',
-                text2: 'Increase quantities to meet minimum order requirements.',
-              });
-              return;
-            }
-            try {
-              const order = await place.mutateAsync();
-              const message = buildOrderWhatsAppMessage({
-                order,
-                profile,
-                notes,
-              });
-              try {
-                await openWhatsAppChat(getWhatsAppAdminPhone(), message);
-              } catch {
-                Toast.show({
-                  type: 'info',
-                  text1: 'Order placed',
-                  text2: 'Could not open WhatsApp. Send the invoice manually.',
-                });
-              }
-              Toast.show({ type: 'success', text1: 'Order placed' });
-              router.push(`/orders/${order._id}`);
-            } catch {
-              Toast.show({ type: 'error', text1: 'Could not place order' });
-            }
-          }}
-        />
-      </View>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerLabel}>Total</Text>
+              <Text style={styles.footerTotal}>
+                {formatCurrencyINR(cart!.totalPrice)}
+              </Text>
+            </View>
+            <Button
+              title="Proceed"
+              onPress={() => router.push('/cart/checkout')}
+            />
+          </View>
+        </>
+      )}
 
       <Modal visible={scanner} animationType="slide">
         <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -250,7 +166,14 @@ export default function CartScreen() {
               style={StyleSheet.absoluteFillObject}
               facing="back"
               barcodeScannerSettings={{
-                barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a'],
+                barcodeTypes: [
+                  'qr',
+                  'ean13',
+                  'ean8',
+                  'code128',
+                  'code39',
+                  'upc_a',
+                ],
               }}
               onBarcodeScanned={onBarcodeScanned}
             />
@@ -270,13 +193,21 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.offWhite },
   header: {
     paddingHorizontal: SPACING.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.offWhite,
   },
   title: { fontSize: 18, fontWeight: '900' },
+  searchRow: {
+    paddingHorizontal: SPACING.md,
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
   search: {
     flex: 1,
     borderWidth: 1,
@@ -295,29 +226,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.white,
   },
-  card: {
+  scrollContent: {
+    paddingBottom: 160,
     backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.lightGray,
   },
-  cardTitle: { fontWeight: '900', marginBottom: SPACING.sm },
-  tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderColor: colors.lightGray },
-  cell: { flex: 1, fontWeight: '800', color: colors.mediumGray, paddingVertical: 6 },
-  line: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lightGray,
-  },
-  thumb: { width: 72, height: 72, backgroundColor: colors.white, borderRadius: 10 },
-  sku: { color: colors.mediumGray, fontSize: 12 },
-  lineName: { fontWeight: '800', color: colors.darkGray },
-  meta: { color: colors.mediumGray, marginTop: 4 },
-  price: { color: colors.success, fontWeight: '900', marginTop: 6 },
   footer: {
     position: 'absolute',
     left: 0,
@@ -329,5 +243,12 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     gap: SPACING.sm,
   },
-  footerTotal: { fontWeight: '900', color: colors.darkGray },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  footerLabel: { color: colors.mediumGray, fontWeight: '600' },
+  footerValue: { fontWeight: '800', color: colors.darkGray },
+  footerTotal: { fontWeight: '900', color: colors.success, fontSize: 16 },
 });

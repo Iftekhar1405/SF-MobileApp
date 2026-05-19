@@ -20,6 +20,7 @@ import { HorizontalChipsSkeleton } from '@/components/ui/HorizontalChipsSkeleton
 import { ProductCard } from '@/components/ui/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/ProductGridSkeleton';
 import { SkeletonBox } from '@/components/ui/SkeletonLoader';
+import { CartIconButton } from '@/components/cart/CartIconButton';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
 import { colors } from '@/constants/colors';
 import { RADIUS, SHADOW, SPACING } from '@/constants/theme';
@@ -297,12 +298,9 @@ export default function CategoryScreen() {
               </>
             )}
           </View>
-          <Pressable
-            onPress={() => router.push('/cart')}
-            hitSlop={12}
-            style={styles.iconBtn}>
-            <Ionicons name="cart-outline" size={22} color={colors.darkGray} />
-          </Pressable>
+          <View style={styles.iconBtn}>
+            <CartIconButton count={cart?.totalItems ?? 0} />
+          </View>
         </View>
       </View>
 

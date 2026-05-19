@@ -1,4 +1,4 @@
-import type { Product } from '@/types/models';
+import type { CartItem, Product } from '@/types/models';
 
 export type ProductOptionRow = {
   optionId: string;
@@ -84,4 +84,29 @@ export function formatProductCardName(product: Product): string {
   if (!right) return left;
   if (!left) return right;
   return `${left} | ${right}`;
+}
+
+/** Cart / order line: article brand | color size×lengths */
+export function formatCartItemLine(
+  product: Product,
+  item: Pick<CartItem, 'color' | 'itemSet'>
+): string {
+  const article = product.article?.trim() ?? '';
+  const brand = product.brand?.trim() ?? '';
+  const left = [article, brand].filter(Boolean).join(' ');
+  const set = item.itemSet?.[0];
+  const setPart = set ? `${set.size}×${set.lengths}` : '';
+  const right = [item.color, setPart].filter(Boolean).join(' ');
+  if (!left && !right) return brand || article || 'Product';
+  if (!right) return left;
+  if (!left) return right;
+  return `${left} | ${right}`;
+}
+
+export function cartItemImageUri(
+  product: Product,
+  color: string
+): string | undefined {
+  const byColor = product.colors?.[color]?.[0];
+  return byColor ?? product.images?.[0];
 }

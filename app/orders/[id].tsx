@@ -8,6 +8,10 @@ import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import { mediaUrl } from '@/services/api';
 import { isPopulatedProduct } from '@/utils/cartLines';
+import {
+  cartItemImageUri,
+  formatCartItemLine,
+} from '@/utils/productOptions';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,9 +33,22 @@ export default function OrderDetailScreen() {
         <Text style={{ textTransform: 'capitalize' }}>{data.status}</Text>
       </Text>
 
+      {data.deliveryAddress ? (
+        <View style={styles.delivery}>
+          <Text style={styles.h2}>Delivery</Text>
+          <Text style={styles.meta}>{data.deliveryAddress}</Text>
+          {data.pincode ? (
+            <Text style={styles.meta}>Pincode: {data.pincode}</Text>
+          ) : null}
+          {data.landmark ? (
+            <Text style={styles.meta}>Landmark: {data.landmark}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {data.items.map((it, idx) => {
         const p = isPopulatedProduct(it.productId) ? it.productId : null;
-        const img = p?.images?.[0];
+        const img = p ? cartItemImageUri(p, it.color) : undefined;
         return (
           <View key={`${idx}`} style={styles.row}>
             <Image
@@ -41,11 +58,15 @@ export default function OrderDetailScreen() {
             />
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>
-                {p ? `${p.brand} | ${it.color}` : 'Product'}
+                {p ? formatCartItemLine(p, it) : 'Product'}
               </Text>
-              <Text style={styles.meta}>Qty: {it.quantity}</Text>
+              <Text style={styles.meta}>
+                {it.quantity} carton{it.quantity === 1 ? '' : 's'}
+              </Text>
             </View>
-            <Text style={styles.price}>{formatCurrencyINR(it.price)}</Text>
+            <Text style={styles.price}>
+              {formatCurrencyINR(it.price * it.quantity)}
+            </Text>
           </View>
         );
       })}
@@ -73,6 +94,13 @@ const styles = StyleSheet.create({
   thumb: { width: 56, height: 56, backgroundColor: colors.offWhite, borderRadius: 8 },
   name: { fontWeight: '700', color: colors.darkGray },
   price: { color: colors.success, fontWeight: '700' },
+  delivery: {
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: colors.offWhite,
+    borderRadius: 8,
+    gap: 4,
+  },
   summary: { marginTop: SPACING.lg },
   priceBig: { fontSize: 18, fontWeight: '800', color: colors.success, marginTop: 4 },
 });

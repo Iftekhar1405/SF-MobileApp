@@ -12,9 +12,12 @@ export async function fetchUserById(id: string): Promise<User> {
 }
 
 export type UpdateProfileBody = {
-  name: string;
-  shopName: string;
-  address: string;
+  name?: string;
+  shopName?: string;
+  address?: string;
+  deliveryAddress?: string;
+  pincode?: string;
+  landmark?: string;
 };
 
 export async function updateCurrentUser(body: UpdateProfileBody): Promise<User> {
