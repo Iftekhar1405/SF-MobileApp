@@ -169,7 +169,7 @@ export default function ProductDetailScreen() {
 
         {opts > 1 ? (
           <Button
-            title={`Manage ${opts} options`}
+            title="Options"
             onPress={() => sheetRef.current?.present()}
           />
         ) : qty <= 0 ? (

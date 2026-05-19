@@ -65,6 +65,22 @@ function findLineId(cart: Cart | undefined, product: Product, row: ProductOption
   return line?._id;
 }
 
+function matchesOptionRow(
+  productId: string,
+  row: ProductOptionRow,
+  payload: {
+    productId: string;
+    color: string;
+    itemSet: { size: string; lengths: number }[];
+  }
+) {
+  return (
+    payload.productId === productId &&
+    payload.color === row.color &&
+    setsEqual(payload.itemSet, [{ size: row.size, lengths: row.lengths }])
+  );
+}
+
 export const ProductOptionsModal = forwardRef<
   BottomSheetModal,
   ProductOptionsModalProps
@@ -127,7 +143,7 @@ export const ProductOptionsModal = forwardRef<
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text numberOfLines={1} style={styles.title}>
-              {product.brand} — All options
+              {product.article} | {product.brand} — All options
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={24} color={colors.darkGray} />
@@ -165,7 +181,11 @@ export const ProductOptionsModal = forwardRef<
                     <Button
                       title="Add"
                       variant="outline"
-                      loading={addMut.isPending}
+                      loading={
+                        addMut.isPending &&
+                        !!addMut.variables &&
+                        matchesOptionRow(product._id, row, addMut.variables)
+                      }
                       onPress={() =>
                         addMut.mutate({
                           productId: product._id,
@@ -178,6 +198,11 @@ export const ProductOptionsModal = forwardRef<
                   ) : (
                     <QuantityStepper
                       value={qty}
+                      disabled={
+                        (updMut.isPending &&
+                          updMut.variables?.itemId === lineId) ||
+                        (delMut.isPending && delMut.variables === lineId)
+                      }
                       onIncrement={() => {
                         if (!lineId) return;
                         updMut.mutate({ itemId: lineId, quantity: qty + 1 });

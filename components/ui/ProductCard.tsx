@@ -75,15 +75,7 @@ export function ProductCard({
         </Text>
       </View>
       {opts > 1 ? (
-        <Button
-          title={
-            cartQty > 0
-              ? `Manage · ${cartQty} carton(s) · ${opts} options`
-              : `Add · ${opts} options`
-          }
-          variant="outline"
-          onPress={onOpenOptions}
-        />
+        <Button title="Options" variant="outline" onPress={onOpenOptions} />
       ) : cartQty <= 0 ? (
         <Button title="Add" variant="outline" onPress={onAddSingle} />
       ) : (
