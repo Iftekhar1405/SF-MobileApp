@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,9 +11,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useProductOptionsSheet } from '@/hooks/useProductOptionsSheet';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
+import { TabScreenHeader } from '@/components/layout/TabScreenHeader';
 import { BrandBrowseSection } from '@/components/browse/BrandBrowseSection';
 import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -33,13 +33,15 @@ import { useCategories } from '@/hooks/useCategories';
 import { useGendersWithCounts } from '@/hooks/useGenders';
 import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
+import { useUserStore } from '@/store/userStore';
 import { cartQtyForProduct } from '@/utils/cartLines';
 import { normalizeBrand } from '@/utils/brand';
 import { categoryDiscoverHref } from '@/utils/categoryBrowse';
 import { expandProductOptions } from '@/utils/productOptions';
 export default function ShopScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const profile = useUserStore((s) => s.profile);
+  const [drawer, setDrawer] = useState(false);
   const params = useLocalSearchParams<{ brand?: string }>();
   const rawBrand = Array.isArray(params.brand) ? params.brand[0] : params.brand;
   const brand = rawBrand
@@ -85,8 +87,9 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.headerBlock, { paddingTop: insets.top }]}>
-        <AppHeader cartCount={cart?.totalItems ?? 0} />
+      <TabScreenHeader
+        cartCount={cart?.totalItems ?? 0}
+        onMenuPress={() => setDrawer(true)}>
         <SearchBar
           onPress={() => router.push('/search')}
           style={styles.searchBar}
@@ -99,7 +102,7 @@ export default function ShopScreen() {
             </Pressable>
           </View>
         ) : null}
-      </View>
+      </TabScreenHeader>
 
       {brand ? (
         <FlatList
@@ -211,19 +214,18 @@ export default function ShopScreen() {
         onClose={dismissSheet}
         onDismiss={handleSheetDismiss}
       />
+
+      <ProfileDrawer
+        visible={drawer}
+        onClose={() => setDrawer(false)}
+        user={profile}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.offWhite },
-  headerBlock: {
-    backgroundColor: colors.white,
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.lightGray,
-  },
   searchBar: {
     marginTop: SPACING.xs,
     marginBottom: SPACING.sm,

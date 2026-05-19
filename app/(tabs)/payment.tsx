@@ -8,19 +8,21 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppHeader } from '@/components/layout/AppHeader';
+import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
+import { TabScreenHeader } from '@/components/layout/TabScreenHeader';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useCartQuery } from '@/hooks/useCart';
 import { useOrderHistory } from '@/hooks/useOrders';
+import { useUserStore } from '@/store/userStore';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import type { Order } from '@/types/models';
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const profile = useUserStore((s) => s.profile);
+  const [drawer, setDrawer] = useState(false);
   const [tab, setTab] = useState<'active' | 'history'>('active');
   const { data: cart, refetch: refetchCart } = useCartQuery();
   const { data, isRefetching, refetch } = useOrderHistory();
@@ -37,9 +39,10 @@ export default function PaymentScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
-      <View style={{ paddingTop: insets.top, paddingHorizontal: SPACING.md }}>
-        <AppHeader cartCount={cart?.totalItems ?? 0} />
-      </View>
+      <TabScreenHeader
+        cartCount={cart?.totalItems ?? 0}
+        onMenuPress={() => setDrawer(true)}
+      />
 
       <View style={styles.tabs}>
         <Pressable
@@ -77,6 +80,12 @@ export default function PaymentScreen() {
         renderItem={({ item }) => (
           <OrderCard item={item} onOpen={() => router.push(`/orders/${item._id}`)} />
         )}
+      />
+
+      <ProfileDrawer
+        visible={drawer}
+        onClose={() => setDrawer(false)}
+        user={profile}
       />
     </View>
   );
