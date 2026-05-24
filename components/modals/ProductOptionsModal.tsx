@@ -197,7 +197,7 @@ export const ProductOptionsModal = forwardRef<
                     />
                   ) : (
                     <QuantityStepper
-                      value={qty}
+                      value={qty * row.lengths}
                       disabled={
                         (updMut.isPending &&
                           updMut.variables?.itemId === lineId) ||

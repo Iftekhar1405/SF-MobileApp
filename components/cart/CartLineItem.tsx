@@ -7,6 +7,7 @@ import { RADIUS, SPACING } from '@/constants/theme';
 import { mediaUrl } from '@/services/api';
 import type { CartItem, Product } from '@/types/models';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
+import { formatDisplayQty, itemDisplayQty } from '@/utils/cartLines';
 import {
   cartItemImageUri,
   formatCartItemLine,
@@ -34,6 +35,7 @@ export function CartLineItem({
   const img = cartItemImageUri(product, item.color);
   const lineTotal = item.price * item.quantity;
   const pairsPerCarton = item.itemSet?.[0]?.lengths ?? 0;
+  const displayQty = itemDisplayQty(item);
 
   return (
     <View style={styles.line}>
@@ -47,7 +49,8 @@ export function CartLineItem({
           {formatCartItemLine(product, item)}
         </Text>
         <Text style={styles.meta}>
-          {item.quantity} carton{item.quantity === 1 ? '' : 's'}
+          {formatDisplayQty(displayQty)} · {item.quantity} carton
+          {item.quantity === 1 ? '' : 's'}
           {pairsPerCarton > 0
             ? ` · ${pairsPerCarton} pairs/carton`
             : ''}
@@ -62,7 +65,7 @@ export function CartLineItem({
         ) : (
           <View style={styles.actions}>
             <QuantityStepper
-              value={item.quantity}
+              value={displayQty}
               disabled={stepperDisabled}
               onIncrement={onIncrement!}
               onDecrement={onDecrement!}

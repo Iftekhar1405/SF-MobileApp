@@ -1,11 +1,21 @@
-import { StyleSheet, View } from 'react-native';
+import {
+  type DimensionValue,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { colors } from '@/constants/colors';
 import { RADIUS } from '@/constants/theme';
 
-type Props = { height?: number; style?: object };
+type Props = {
+  height?: number;
+  width?: DimensionValue;
+  style?: StyleProp<ViewStyle>;
+};
 
-export function SkeletonBox({ height = 16, style }: Props) {
-  return <View style={[styles.box, { height }, style]} />;
+export function SkeletonBox({ height = 16, width = '100%', style }: Props) {
+  return <View style={[styles.box, { height, width }, style]} />;
 }
 
 const styles = StyleSheet.create({

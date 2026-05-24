@@ -16,6 +16,7 @@ import {
 type Props = {
   product: Product;
   cartQty: number;
+  cartDisplayQty?: number;
   onViewProduct: () => void;
   onOpenOptions: () => void;
   onAddSingle: () => void;
@@ -30,6 +31,7 @@ const STOCK_STYLES = {
 export function ProductCard({
   product,
   cartQty,
+  cartDisplayQty = cartQty,
   onViewProduct,
   onOpenOptions,
   onAddSingle,
@@ -80,7 +82,7 @@ export function ProductCard({
         <Button title="Add" variant="outline" onPress={onAddSingle} />
       ) : (
         <QuantityStepper
-          value={cartQty}
+          value={cartDisplayQty}
           onDecrement={() => onChangeQty(Math.max(0, cartQty - 1))}
           onIncrement={() => onChangeQty(cartQty + 1)}
         />

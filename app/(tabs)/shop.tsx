@@ -21,6 +21,7 @@ import { ProductCard } from '@/components/ui/ProductCard';
 import { GenderTileRow } from '@/components/ui/GenderTileRow';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import {
@@ -34,7 +35,11 @@ import { useGendersWithCounts } from '@/hooks/useGenders';
 import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
-import { cartQtyForProduct } from '@/utils/cartLines';
+import {
+  cartDisplayQty,
+  cartDisplayQtyForProduct,
+  cartQtyForProduct,
+} from '@/utils/cartLines';
 import { normalizeBrand } from '@/utils/brand';
 import { categoryDiscoverHref } from '@/utils/categoryBrowse';
 import { expandProductOptions } from '@/utils/productOptions';
@@ -65,6 +70,8 @@ export default function ShopScreen() {
 
   const {
     data: categories,
+    error: categoriesError,
+    isError: categoriesIsError,
     isLoading,
     refetch,
     isRefetching,
@@ -88,7 +95,7 @@ export default function ShopScreen() {
   return (
     <View style={styles.screen}>
       <TabScreenHeader
-        cartCount={cart?.totalItems ?? 0}
+        cartCount={cartDisplayQty(cart)}
         onMenuPress={() => setDrawer(true)}>
         <SearchBar
           onPress={() => router.push('/search')}
@@ -104,7 +111,13 @@ export default function ShopScreen() {
         ) : null}
       </TabScreenHeader>
 
-      {brand ? (
+      {brand && brandProducts.isError && brandList.length === 0 ? (
+        <NetworkRetryState
+          error={brandProducts.error}
+          loading={brandProducts.isRefetching}
+          onRetry={() => brandProducts.refetch()}
+        />
+      ) : brand ? (
         <FlatList
           data={brandList}
           numColumns={2}
@@ -130,6 +143,7 @@ export default function ShopScreen() {
               <ProductCard
                 product={item}
                 cartQty={cartQtyForProduct(cart, item._id)}
+                cartDisplayQty={cartDisplayQtyForProduct(cart, item._id)}
                 onViewProduct={() => router.push(`/product/${item._id}`)}
                 onOpenOptions={() => openSheet(item)}
                 onAddSingle={() => {
@@ -157,6 +171,12 @@ export default function ShopScreen() {
               />
             </View>
           )}
+        />
+      ) : categoriesIsError && !categories ? (
+        <NetworkRetryState
+          error={categoriesError}
+          loading={isRefetching}
+          onRetry={() => refetch()}
         />
       ) : (
         <ScrollView

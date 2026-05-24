@@ -17,6 +17,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Button } from '@/components/ui/Button';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
 import {
@@ -39,7 +40,14 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const pid = Array.isArray(id) ? id[0] : id;
 
-  const { data: product, isLoading } = useProduct(pid);
+  const {
+    data: product,
+    error,
+    isError,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useProduct(pid);
   const { data: cart } = useCartQuery();
   const addMut = useAddToCart();
   const updMut = useUpdateCartItem();
@@ -68,11 +76,21 @@ export default function ProductDetailScreen() {
   const opts = product ? optionCount(product) : 0;
   const qty = product ? cartQtyForProduct(cart, product._id) : 0;
 
-  if (isLoading || !product) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Text>Loading…</Text>
       </View>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <NetworkRetryState
+        error={error}
+        loading={isRefetching}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -187,7 +205,7 @@ export default function ProductDetailScreen() {
           />
         ) : (
           <QuantityStepper
-            value={qty}
+            value={qty * (selectedLengths || 1)}
             onIncrement={() => {
               const line = cart?.items?.find((it) => {
                 const pid =

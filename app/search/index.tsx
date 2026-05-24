@@ -13,6 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SearchResultRow } from '@/components/ui/SearchResultRow';
 import { colors } from '@/constants/colors';
@@ -35,6 +36,7 @@ export default function SearchScreen() {
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
   const [results, setResults] = useState<Product[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,6 +76,7 @@ export default function SearchScreen() {
       return;
     }
     setLoading(true);
+    setSearchError(null);
     try {
       const res = await searchProductsQuery({ q: term, page: 1 });
       setResults((res.products ?? []) as Product[]);
@@ -82,6 +85,9 @@ export default function SearchScreen() {
       const next = [term, ...prev.filter((x) => x !== term)].slice(0, MAX_RECENT);
       await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(next));
       setRecent(next);
+    } catch (e: unknown) {
+      setResults([]);
+      setSearchError(e);
     } finally {
       setLoading(false);
     }
@@ -131,6 +137,11 @@ export default function SearchScreen() {
 
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.primary} />
+      ) : searchError && debounced ? (
+        <NetworkRetryState
+          error={searchError}
+          onRetry={() => runSearch(debounced)}
+        />
       ) : (
         <FlatList
           data={results}

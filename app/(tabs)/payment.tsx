@@ -10,11 +10,17 @@ import {
 import { useRouter } from 'expo-router';
 import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import { TabScreenHeader } from '@/components/layout/TabScreenHeader';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useCartQuery } from '@/hooks/useCart';
 import { useOrderHistory } from '@/hooks/useOrders';
 import { useUserStore } from '@/store/userStore';
+import {
+  cartDisplayQty,
+  formatDisplayQty,
+  itemsDisplayQty,
+} from '@/utils/cartLines';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import type { Order } from '@/types/models';
@@ -25,7 +31,7 @@ export default function PaymentScreen() {
   const [drawer, setDrawer] = useState(false);
   const [tab, setTab] = useState<'active' | 'history'>('active');
   const { data: cart, refetch: refetchCart } = useCartQuery();
-  const { data, isRefetching, refetch } = useOrderHistory();
+  const { data, error, isError, isRefetching, refetch } = useOrderHistory();
 
   const filtered = useMemo(() => {
     const rows = data ?? [];
@@ -40,7 +46,7 @@ export default function PaymentScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.offWhite }}>
       <TabScreenHeader
-        cartCount={cart?.totalItems ?? 0}
+        cartCount={cartDisplayQty(cart)}
         onMenuPress={() => setDrawer(true)}
       />
 
@@ -61,26 +67,38 @@ export default function PaymentScreen() {
         </Pressable>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item._id}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => {
-              refetch();
-              refetchCart();
-            }}
-          />
-        }
-        contentContainerStyle={{ padding: SPACING.md, gap: SPACING.sm, paddingBottom: 120 }}
-        ListEmptyComponent={
-          <Text style={{ color: colors.mediumGray }}>No orders in this tab.</Text>
-        }
-        renderItem={({ item }) => (
-          <OrderCard item={item} onOpen={() => router.push(`/orders/${item._id}`)} />
-        )}
-      />
+      {isError && !data ? (
+        <NetworkRetryState
+          error={error}
+          loading={isRefetching}
+          onRetry={() => refetch()}
+        />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item._id}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => {
+                refetch();
+                refetchCart();
+              }}
+            />
+          }
+          contentContainerStyle={{
+            padding: SPACING.md,
+            gap: SPACING.sm,
+            paddingBottom: 120,
+          }}
+          ListEmptyComponent={
+            <Text style={{ color: colors.mediumGray }}>No orders in this tab.</Text>
+          }
+          renderItem={({ item }) => (
+            <OrderCard item={item} onOpen={() => router.push(`/orders/${item._id}`)} />
+          )}
+        />
+      )}
 
       <ProfileDrawer
         visible={drawer}
@@ -99,7 +117,7 @@ function OrderCard({ item, onOpen }: { item: Order; onOpen: () => void }) {
         {item.createdAt ? formatDateShort(item.createdAt) : ''}
       </Text>
       <Text style={styles.meta}>
-        {item.totalItems} items · {formatCurrencyINR(item.totalPrice)}
+        {formatDisplayQty(itemsDisplayQty(item.items))} · {formatCurrencyINR(item.totalPrice)}
       </Text>
       <Text style={styles.badge}>{item.status}</Text>
       <Text style={styles.link}>View details</Text>

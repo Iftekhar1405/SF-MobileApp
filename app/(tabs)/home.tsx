@@ -20,6 +20,7 @@ import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
 import { useCartQuery } from '@/hooks/useCart';
 import { useUserStore } from '@/store/userStore';
+import { cartDisplayQty } from '@/utils/cartLines';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -31,7 +32,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: cart, refetch: refetchCart } = useCartQuery();
-  const cartCount = cart?.totalItems ?? 0;
+  const cartCount = cartDisplayQty(cart);
 
   const onRefresh = async () => {
     setRefreshing(true);

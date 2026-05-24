@@ -2,12 +2,17 @@ import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useOrder } from '@/hooks/useOrders';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { formatDateShort } from '@/utils/formatDate';
 import { mediaUrl } from '@/services/api';
-import { isPopulatedProduct } from '@/utils/cartLines';
+import {
+  formatDisplayQty,
+  isPopulatedProduct,
+  itemDisplayQty,
+} from '@/utils/cartLines';
 import {
   cartItemImageUri,
   formatCartItemLine,
@@ -15,13 +20,24 @@ import {
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useOrder(id);
+  const { data, error, isError, isLoading, isRefetching, refetch } =
+    useOrder(id);
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
       </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <NetworkRetryState
+        error={error}
+        loading={isRefetching}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -61,7 +77,8 @@ export default function OrderDetailScreen() {
                 {p ? formatCartItemLine(p, it) : 'Product'}
               </Text>
               <Text style={styles.meta}>
-                {it.quantity} carton{it.quantity === 1 ? '' : 's'}
+                {formatDisplayQty(itemDisplayQty(it))} · {it.quantity} carton
+                {it.quantity === 1 ? '' : 's'}
               </Text>
             </View>
             <Text style={styles.price}>

@@ -1,5 +1,10 @@
 import type { CartItem, Order, User } from '@/types/models';
-import { isPopulatedProduct } from '@/utils/cartLines';
+import {
+  formatDisplayQty,
+  isPopulatedProduct,
+  itemDisplayQty,
+  itemsDisplayQty,
+} from '@/utils/cartLines';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
 import { getWebAppUrl } from '@/utils/openWhatsApp';
 
@@ -23,7 +28,7 @@ function formatLineItem(item: LineItem, index: number): string {
   • Brand: ${brand}
   • Article: ${article}${category ? `\n  • Category: ${category}` : ''}
   • Color: ${item.color}
-  • Quantity: ${item.quantity} carton(s)${sets ? `\n  • Sizes:\n${sets}` : ''}`;
+  • Quantity: ${formatDisplayQty(itemDisplayQty(item))} (${item.quantity} carton(s))${sets ? `\n  • Sizes:\n${sets}` : ''}`;
 }
 
 function resolveCustomer(order: Order, profile?: User | null) {
@@ -80,7 +85,8 @@ export function buildOrderWhatsAppMessage(params: {
 ${itemDetails || '(No items)'}
 
 💰 *Order total:* ${formatCurrencyINR(order.totalPrice)}
-📊 *Total cartons:* ${order.totalItems}${deliveryBlock}${notesBlock}
+📊 *Total quantity:* ${formatDisplayQty(itemsDisplayQty(items))}
+📦 *Total cartons:* ${order.totalItems}${deliveryBlock}${notesBlock}
 
 🆔 *Order ID:* \`${order._id}\`
 

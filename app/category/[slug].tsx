@@ -21,6 +21,7 @@ import { ProductCard } from '@/components/ui/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/ProductGridSkeleton';
 import { SkeletonBox } from '@/components/ui/SkeletonLoader';
 import { CartIconButton } from '@/components/cart/CartIconButton';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
 import { colors } from '@/constants/colors';
 import { RADIUS, SHADOW, SPACING } from '@/constants/theme';
@@ -35,7 +36,11 @@ import {
   useCategoryProductsInfinite,
   useProductsInfinite,
 } from '@/hooks/useProducts';
-import { cartQtyForProduct } from '@/utils/cartLines';
+import {
+  cartDisplayQty,
+  cartDisplayQtyForProduct,
+  cartQtyForProduct,
+} from '@/utils/cartLines';
 import {
   genderAccentColor,
   genderDisplayName,
@@ -191,7 +196,8 @@ export default function CategoryScreen() {
     return 'Browse catalogue';
   }, [showProductsLoading, total, list.length]);
 
-  const listBottomPad = cart && cart.totalItems > 0 ? 120 : SPACING.xl;
+  const totalDisplayQty = cartDisplayQty(cart);
+  const listBottomPad = totalDisplayQty > 0 ? 120 : SPACING.xl;
 
   const listHeader = (
     <View style={styles.categoryPanel}>
@@ -299,7 +305,7 @@ export default function CategoryScreen() {
             )}
           </View>
           <View style={styles.iconBtn}>
-            <CartIconButton count={cart?.totalItems ?? 0} />
+            <CartIconButton count={totalDisplayQty} />
           </View>
         </View>
       </View>
@@ -330,6 +336,12 @@ export default function CategoryScreen() {
         ListEmptyComponent={
           showProductsLoading ? (
             <ProductGridSkeleton count={6} />
+          ) : activeQuery.isError ? (
+            <NetworkRetryState
+              error={activeQuery.error}
+              loading={isRefetching}
+              onRetry={() => refetch()}
+            />
           ) : (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
@@ -368,6 +380,7 @@ export default function CategoryScreen() {
             <ProductCard
               product={item}
               cartQty={cartQtyForProduct(cart, item._id)}
+              cartDisplayQty={cartDisplayQtyForProduct(cart, item._id)}
               onViewProduct={() => router.push(`/product/${item._id}`)}
               onOpenOptions={() => openSheet(item)}
               onAddSingle={() => {
@@ -404,12 +417,12 @@ export default function CategoryScreen() {
         onClose={() => setSortMenuOpen(false)}
       />
 
-      {cart && cart.totalItems > 0 ? (
+      {cart && totalDisplayQty > 0 ? (
         <Pressable
           onPress={() => router.push('/cart')}
           style={[styles.stickyBar, { marginBottom: insets.bottom + SPACING.sm }]}>
           <Text style={styles.stickyLeft}>
-            {cart.totalItems} item(s) · ₹{cart.totalPrice.toFixed(2)}
+            {totalDisplayQty} pair(s) · ₹{cart.totalPrice.toFixed(2)}
           </Text>
           <View style={styles.stickyBtn}>
             <Text style={styles.stickyBtnText}>Go to Cart</Text>

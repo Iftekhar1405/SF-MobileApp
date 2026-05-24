@@ -3,6 +3,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   RefreshControl,
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { CartEmptyState } from '@/components/cart/CartEmptyState';
 import { CartLineItem } from '@/components/cart/CartLineItem';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
@@ -26,12 +28,23 @@ import {
 } from '@/hooks/useCart';
 import { searchProductsByArticle } from '@/services/product.service';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
-import { isPopulatedProduct } from '@/utils/cartLines';
+import {
+  cartDisplayQty,
+  formatDisplayQty,
+  isPopulatedProduct,
+} from '@/utils/cartLines';
 
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: cart, refetch, isRefetching } = useCartQuery();
+  const {
+    data: cart,
+    error,
+    isError,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useCartQuery();
   const upd = useUpdateCartItem();
   const del = useRemoveCartItem();
 
@@ -41,6 +54,7 @@ export default function CartScreen() {
 
   const items = cart?.items ?? [];
   const hasItems = items.length > 0;
+  const totalDisplayQty = cartDisplayQty(cart);
 
   const openScanner = async () => {
     const res = await requestPermission();
@@ -96,7 +110,17 @@ export default function CartScreen() {
         </View>
       ) : null}
 
-      {!hasItems ? (
+      {isLoading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : isError && !cart ? (
+        <NetworkRetryState
+          error={error}
+          loading={isRefetching}
+          onRetry={() => refetch()}
+        />
+      ) : !hasItems ? (
         <CartEmptyState />
       ) : (
         <>
@@ -142,7 +166,7 @@ export default function CartScreen() {
             <View style={styles.footerRow}>
               <Text style={styles.footerLabel}>Quantity</Text>
               <Text style={styles.footerValue}>
-                {cart!.totalItems} carton{cart!.totalItems === 1 ? '' : 's'}
+                {formatDisplayQty(totalDisplayQty)}
               </Text>
             </View>
             <View style={styles.footerRow}>
@@ -194,6 +218,7 @@ export default function CartScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.offWhite },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     paddingHorizontal: SPACING.md,
     flexDirection: 'row',

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import { CartLineItem } from '@/components/cart/CartLineItem';
 import { DeliveryAddressFields } from '@/components/cart/DeliveryAddressFields';
 import { DeliveryAddressSummary } from '@/components/cart/DeliveryAddressSummary';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
 import { RADIUS, SPACING } from '@/constants/theme';
@@ -24,7 +26,11 @@ import type { PlaceOrderBody } from '@/services/order.service';
 import { buildOrderWhatsAppMessage } from '@/utils/whatsappOrder';
 import { getWhatsAppAdminPhone, openWhatsAppChat } from '@/utils/openWhatsApp';
 import { formatCurrencyINR } from '@/utils/formatCurrency';
-import { isPopulatedProduct } from '@/utils/cartLines';
+import {
+  cartDisplayQty,
+  formatDisplayQty,
+  isPopulatedProduct,
+} from '@/utils/cartLines';
 import { getApiErrorMessage } from '@/utils/getApiErrorMessage';
 import {
   getSavedDelivery,
@@ -36,7 +42,14 @@ import {
 export default function CheckoutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: cart } = useCartQuery();
+  const {
+    data: cart,
+    error: cartError,
+    isError: cartIsError,
+    isLoading: cartIsLoading,
+    isRefetching: cartIsRefetching,
+    refetch: refetchCart,
+  } = useCartQuery();
   const { data: profileFromApi } = useProfile();
   const storeProfile = useUserStore((s) => s.profile);
   const setProfile = useUserStore((s) => s.setProfile);
@@ -68,12 +81,13 @@ export default function CheckoutScreen() {
   }, [profile, useShopAddress]);
 
   const items = cart?.items ?? [];
+  const totalDisplayQty = cartDisplayQty(cart);
 
   useEffect(() => {
-    if (!items.length) {
+    if (cart && !items.length) {
       router.replace('/cart');
     }
-  }, [items.length, router]);
+  }, [cart, items.length, router]);
 
   const selectShopDelivery = () => {
     setUseShopAddress(true);
@@ -139,10 +153,30 @@ export default function CheckoutScreen() {
       Toast.show({
         type: 'error',
         text1: 'Could not place order',
-        text2: getApiErrorMessage(e),
+        text2: getApiErrorMessage(e, 'Please check your internet and try again.'),
       });
     }
   };
+
+  if (cartIsLoading) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (cartIsError && !cart) {
+    return (
+      <NetworkRetryState
+        error={cartError}
+        loading={cartIsRefetching}
+        onRetry={() => refetchCart()}
+      />
+    );
+  }
 
   if (!items.length) return null;
 
@@ -233,7 +267,7 @@ export default function CheckoutScreen() {
         <View style={styles.footerRow}>
           <Text style={styles.footerLabel}>Quantity</Text>
           <Text style={styles.footerValue}>
-            {cart!.totalItems} carton{cart!.totalItems === 1 ? '' : 's'}
+            {formatDisplayQty(totalDisplayQty)}
           </Text>
         </View>
         <View style={styles.footerRow}>
@@ -255,6 +289,7 @@ export default function CheckoutScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.offWhite },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     paddingHorizontal: SPACING.md,
     flexDirection: 'row',

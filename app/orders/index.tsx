@@ -14,16 +14,29 @@ import { colors } from '@/constants/colors';
 import { SPACING } from '@/constants/theme';
 import { useOrderHistory } from '@/hooks/useOrders';
 import type { Order } from '@/types/models';
+import { NetworkRetryState } from '@/components/network/NetworkRetryState';
+import { formatDisplayQty, itemsDisplayQty } from '@/utils/cartLines';
 
 export default function OrdersIndex() {
   const router = useRouter();
-  const { data, isLoading, refetch, isRefetching } = useOrderHistory();
+  const { data, error, isError, isLoading, refetch, isRefetching } =
+    useOrderHistory();
 
   if (isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
       </View>
+    );
+  }
+
+  if (isError && !data) {
+    return (
+      <NetworkRetryState
+        error={error}
+        loading={isRefetching}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -56,7 +69,7 @@ function OrderRow({ item, onPress }: { item: Order; onPress: () => void }) {
         {item.createdAt ? formatDateShort(item.createdAt) : ''}
       </Text>
       <Text style={styles.meta}>
-        {item.totalItems} items · {formatCurrencyINR(item.totalPrice)}
+        {formatDisplayQty(itemsDisplayQty(item.items))} · {formatCurrencyINR(item.totalPrice)}
       </Text>
       <Text style={styles.link}>View details</Text>
     </Pressable>
