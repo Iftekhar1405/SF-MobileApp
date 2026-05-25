@@ -16,10 +16,12 @@ import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import { TabScreenHeader } from '@/components/layout/TabScreenHeader';
 import { BrandBrowseSection } from '@/components/browse/BrandBrowseSection';
 import { CategoryBrowseSection } from '@/components/browse/CategoryBrowseSection';
+import { PromotionCarousel } from '@/components/promotions/PromotionCarousel';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { GenderTileRow } from '@/components/ui/GenderTileRow';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { SkeletonBox } from '@/components/ui/SkeletonLoader';
 import { ProductOptionsModal } from '@/components/modals/ProductOptionsModal';
 import { NetworkRetryState } from '@/components/network/NetworkRetryState';
 import { colors } from '@/constants/colors';
@@ -32,6 +34,7 @@ import {
 } from '@/hooks/useCart';
 import { useCategories } from '@/hooks/useCategories';
 import { useGendersWithCounts } from '@/hooks/useGenders';
+import { usePromotions } from '@/hooks/usePromotions';
 import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
@@ -43,6 +46,7 @@ import {
 import { normalizeBrand } from '@/utils/brand';
 import { categoryDiscoverHref } from '@/utils/categoryBrowse';
 import { expandProductOptions } from '@/utils/productOptions';
+
 export default function ShopScreen() {
   const router = useRouter();
   const profile = useUserStore((s) => s.profile);
@@ -67,6 +71,12 @@ export default function ShopScreen() {
   const delMut = useRemoveCartItem();
 
   const { data: genderCounts } = useGendersWithCounts();
+  const {
+    data: promotions,
+    isLoading: promotionsLoading,
+    isRefetching: promotionsRefetching,
+    refetch: refetchPromotions,
+  } = usePromotions();
 
   const {
     data: categories,
@@ -91,6 +101,7 @@ export default function ShopScreen() {
     () => brandProducts.data?.pages.flatMap((p) => p.products) ?? [],
     [brandProducts.data]
   );
+  const banners = promotions ?? [];
 
   return (
     <View style={styles.screen}>
@@ -182,10 +193,11 @@ export default function ShopScreen() {
         <ScrollView
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
+              refreshing={isRefetching || promotionsRefetching}
               onRefresh={() => {
                 refetch();
                 refetchCart();
+                refetchPromotions();
               }}
             />
           }
@@ -216,6 +228,15 @@ export default function ShopScreen() {
               onNavigate: () => router.push(categoryDiscoverHref()),
             }}
           />
+
+          <View style={styles.section}>
+            <SectionHeader title="Promotions" variant="prominent" />
+            {promotionsLoading ? (
+              <SkeletonBox height={160} style={styles.bannerSkeleton} />
+            ) : (
+              <PromotionCarousel promotions={banners} />
+            )}
+          </View>
 
           <BrandBrowseSection
             brands={brands}
@@ -257,6 +278,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: SPACING.xl,
+  },
+  bannerSkeleton: {
+    borderRadius: 12,
+    marginTop: SPACING.sm,
   },
   brandBanner: {
     flexDirection: 'row',

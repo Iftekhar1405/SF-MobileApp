@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Dimensions,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,35 +8,39 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import { TabScreenHeader } from '@/components/layout/TabScreenHeader';
 import { DealerProfileCard } from '@/components/home/DealerProfileCard';
 import { RelationshipManagerCard } from '@/components/home/RelationshipManagerCard';
+import { PromotionCarousel } from '@/components/promotions/PromotionCarousel';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { SkeletonBox } from '@/components/ui/SkeletonLoader';
 import { colors } from '@/constants/colors';
-import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
 import { useCartQuery } from '@/hooks/useCart';
+import { usePromotions } from '@/hooks/usePromotions';
 import { useUserStore } from '@/store/userStore';
 import { cartDisplayQty } from '@/utils/cartLines';
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useRouter();
   const profile = useUserStore((s) => s.profile);
   const [drawer, setDrawer] = useState(false);
-  const [bannerIdx, setBannerIdx] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: cart, refetch: refetchCart } = useCartQuery();
+  const {
+    data: promotions,
+    isLoading: promotionsLoading,
+    refetch: refetchPromotions,
+  } = usePromotions();
   const cartCount = cartDisplayQty(cart);
+  const banners = promotions ?? [];
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refetchCart();
+      await Promise.all([refetchCart(), refetchPromotions()]);
     } finally {
       setRefreshing(false);
     }
@@ -81,33 +84,11 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.sectionLabel}>Promotions</Text>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={(e) => {
-            const x = e.nativeEvent.contentOffset.x;
-            setBannerIdx(Math.round(x / SCREEN_W));
-          }}
-          scrollEventThrottle={16}
-          style={styles.bannerScroll}>
-          {MOCK_BANNERS.map((b) => (
-            <Image
-              key={b.id}
-              source={{ uri: b.uri }}
-              style={styles.banner}
-              contentFit="cover"
-            />
-          ))}
-        </ScrollView>
-        <View style={styles.dots}>
-          {MOCK_BANNERS.map((b, i) => (
-            <View
-              key={b.id}
-              style={[styles.dot, i === bannerIdx && styles.dotActive]}
-            />
-          ))}
-        </View>
+        {promotionsLoading ? (
+          <SkeletonBox height={160} style={styles.bannerSkeleton} />
+        ) : (
+          <PromotionCarousel promotions={banners} />
+        )}
         <RelationshipManagerCard />
 
       </ScrollView>
@@ -159,25 +140,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  bannerScroll: {
-    marginHorizontal: -SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  banner: {
-    width: SCREEN_W,
-    height: 160,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
+  bannerSkeleton: {
+    borderRadius: RADIUS.md,
     marginBottom: SPACING.lg,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.lightGray,
-  },
-  dotActive: { backgroundColor: colors.primary },
 });
