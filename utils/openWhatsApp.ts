@@ -9,16 +9,33 @@ export function buildWhatsAppUrl(phone: string, message: string): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
+export function buildWhatsAppFallbackUrl(phone: string, message: string): string {
+  const digits = normalizeWhatsAppPhone(phone);
+  return `https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(message)}`;
+}
+
 export async function openWhatsAppChat(
   phone: string,
   message: string
 ): Promise<void> {
-  const url = buildWhatsAppUrl(phone, message);
-  const canOpen = await Linking.canOpenURL(url);
-  if (!canOpen) {
-    throw new Error('WhatsApp is not available on this device');
+  const urls = [
+    buildWhatsAppUrl(phone, message),
+    buildWhatsAppFallbackUrl(phone, message),
+  ];
+  let lastError: unknown;
+
+  for (const url of urls) {
+    try {
+      await Linking.openURL(url);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
   }
-  await Linking.openURL(url);
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Could not open WhatsApp');
 }
 
 export function getWhatsAppAdminPhone(): string {

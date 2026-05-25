@@ -28,6 +28,16 @@ export type Product = {
   colorsStock?: { color: string; inStock: boolean }[];
 };
 
+export type Promotion = {
+  _id: string;
+  title?: string;
+  imageUrl: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type CartItem = {
   _id: string;
   productId: Product | string;
