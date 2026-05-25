@@ -15,6 +15,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -38,6 +39,7 @@ export function ProfileDrawer({ visible, onClose, user }: Props) {
   const logout = useAuthStore((s) => s.logout);
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(visible);
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
   const slideX = useSharedValue(-PANEL_W);
   const backdropOpacity = useSharedValue(0);
@@ -144,6 +146,7 @@ export function ProfileDrawer({ visible, onClose, user }: Props) {
             <Ionicons name="log-out-outline" size={20} color={colors.error} />
             <Text style={styles.logoutText}>Logout</Text>
           </Pressable>
+          <Text style={styles.version}>v{appVersion}</Text>
         </Animated.View>
       </View>
     </Modal>
@@ -238,5 +241,12 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: '700',
     fontSize: 15,
+  },
+  version: {
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+    color: colors.mediumGray,
+    fontSize: 11,
+    opacity: 0.65,
   },
 });
