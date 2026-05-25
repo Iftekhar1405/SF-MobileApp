@@ -23,7 +23,6 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SkeletonBox } from '@/components/ui/SkeletonLoader';
 import { colors } from '@/constants/colors';
-import { MOCK_BANNERS } from '@/constants/mockBanners';
 import { RADIUS, SPACING } from '@/constants/theme';
 import {
   useAddToCart,
@@ -32,6 +31,7 @@ import {
   useUpdateCartItem,
 } from '@/hooks/useCart';
 import { useCategories } from '@/hooks/useCategories';
+import { usePromotions } from '@/hooks/usePromotions';
 import { useProductsInfinite } from '@/hooks/useProducts';
 import { fetchBrands } from '@/services/product.service';
 import { useUserStore } from '@/store/userStore';
@@ -61,6 +61,12 @@ export default function HomeScreen() {
   const delMut = useRemoveCartItem();
 
   const { data: genderCounts } = useGendersWithCounts();
+  const {
+    data: promotions,
+    isLoading: promotionsLoading,
+    refetch: refetchPromotions,
+    isRefetching: promotionsRefetching,
+  } = usePromotions();
 
   const {
     data: categories,
@@ -82,7 +88,11 @@ export default function HomeScreen() {
   );
 
   const refreshing =
-    catRefetching || productsQ.isRefetching || productsQ.isFetching;
+    catRefetching ||
+    productsQ.isRefetching ||
+    productsQ.isFetching ||
+    promotionsRefetching;
+  const banners = promotions ?? [];
 
   const onRefresh = async () => {
     await Promise.all([
@@ -90,6 +100,7 @@ export default function HomeScreen() {
       refetchBrands(),
       productsQ.refetch(),
       refetchCart(),
+      refetchPromotions(),
     ]);
   };
 
@@ -148,33 +159,43 @@ export default function HomeScreen() {
         </View>
 
         <SectionHeader title="Promotions" />
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={(e) => {
-            const x = e.nativeEvent.contentOffset.x;
-            setBannerIdx(Math.round(x / SCREEN_W));
-          }}
-          scrollEventThrottle={16}
-          style={{ marginHorizontal: -SPACING.md }}>
-          {MOCK_BANNERS.map((b) => (
-            <Image
-              key={b.id}
-              source={{ uri: b.uri }}
-              style={{ width: SCREEN_W, height: 160 }}
-              contentFit="cover"
-            />
-          ))}
-        </ScrollView>
-        <View style={styles.dots}>
-          {MOCK_BANNERS.map((b, i) => (
-            <View
-              key={b.id}
-              style={[styles.dot, i === bannerIdx && styles.dotActive]}
-            />
-          ))}
-        </View>
+        {promotionsLoading ? (
+          <SkeletonBox height={160} />
+        ) : banners.length > 0 ? (
+          <>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={(e) => {
+                const x = e.nativeEvent.contentOffset.x;
+                setBannerIdx(Math.round(x / SCREEN_W));
+              }}
+              scrollEventThrottle={16}
+              style={{ marginHorizontal: -SPACING.md }}>
+              {banners.map((b) => (
+                <Image
+                  key={b._id}
+                  source={{ uri: b.imageUrl }}
+                  style={{ width: SCREEN_W, height: 160 }}
+                  contentFit="cover"
+                />
+              ))}
+            </ScrollView>
+            <View style={styles.dots}>
+              {banners.map((b, i) => (
+                <View
+                  key={b._id}
+                  style={[styles.dot, i === bannerIdx && styles.dotActive]}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <View style={styles.emptyPromo}>
+            <Text style={styles.emptyPromoText}>No promotions available.</Text>
+          </View>
+        )}
 
         <SectionHeader
           title="Shop by gender"
@@ -347,6 +368,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quickLabel: { marginTop: 4, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  emptyPromo: {
+    height: 160,
+    borderRadius: RADIUS.md,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPromoText: { color: colors.mediumGray, fontWeight: '600' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: SPACING.sm },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.lightGray },
   dotActive: { backgroundColor: colors.primary },
